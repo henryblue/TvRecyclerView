@@ -238,7 +238,7 @@ public class TvRecyclerView extends RecyclerView {
 
     @Override
     protected int getChildDrawingOrder(int childCount, int i) {
-        int position = mSelectedPosition;
+        int position = indexOfChild(mSelectedItem);
         if (position < 0) {
             return i;
         } else {
@@ -295,8 +295,12 @@ public class TvRecyclerView extends RecyclerView {
 
         if (!mIsAutoProcessFocus) {
             processMoves(event.getKeyCode());
-            mSelectedItem = getFocusedChild();
-            mSelectedPosition = indexOfChild(mSelectedItem);
+            if (mNextFocused != null) {
+                mSelectedItem = mNextFocused;
+            } else {
+                mSelectedItem = getFocusedChild();
+            }
+            mSelectedPosition = getChildAdapterPosition(mSelectedItem);
         }
         return super.dispatchKeyEvent(event);
     }
@@ -358,14 +362,14 @@ public class TvRecyclerView extends RecyclerView {
             if (mIsDrawFocusMoveAnim) {
                 if (mNextFocused != null) {
                     mSelectedItem = mNextFocused;
-                    mSelectedPosition = indexOfChild(mSelectedItem);
+                    mSelectedPosition = getChildAdapterPosition(mSelectedItem);
                 }
                 mIsDrawFocusMoveAnim = false;
                 setLayerType(View.LAYER_TYPE_SOFTWARE, null);
                 postInvalidate();
                 if (mItemStateListener != null) {
                     mItemStateListener.onItemViewFocusChanged(true, mSelectedItem,
-                            getChildAdapterPosition(mSelectedItem));
+                            mSelectedPosition);
                 }
             }
         }
@@ -389,7 +393,7 @@ public class TvRecyclerView extends RecyclerView {
                     smoothScrollView(keycode);
                 }
             } else {
-                boolean isOver = isOverHalfScreen(mSelectedItem, keycode);
+                boolean isOver = isOverHalfScreen(mNextFocused, keycode);
                 if (isOver) {
                     smoothScrollView(keycode);
                 }
@@ -422,12 +426,8 @@ public class TvRecyclerView extends RecyclerView {
                         mNextFocused.getWidth() / 2 - mScreenWidth / 2;
                 break;
             case KeyEvent.KEYCODE_DPAD_LEFT:
-                if (mIsFollowScroll) {
-                    distance = mNextFocused.getRight()
-                            - mScreenWidth / 2 - mNextFocused.getWidth() / 2;
-                } else {
-                    distance = -mScreenWidth / 2;
-                }
+                    distance = mNextFocused.getLeft()
+                            - mScreenWidth / 2 + mNextFocused.getWidth() / 2;
                 break;
             case KeyEvent.KEYCODE_DPAD_UP:
                 distance = mNextFocused.getBottom() -
@@ -504,6 +504,9 @@ public class TvRecyclerView extends RecyclerView {
         return mSelectedPosition;
     }
 
+    View getSelectedView() {
+        return mSelectedItem;
+    }
     public float getSelectedScaleValue() {
         return mSelectedScaleValue;
     }

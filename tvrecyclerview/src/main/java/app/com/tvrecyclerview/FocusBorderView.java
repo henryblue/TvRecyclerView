@@ -66,8 +66,8 @@ public class FocusBorderView extends View {
             mTvRecyclerView.setLayerType(View.LAYER_TYPE_NONE, null);
             View v = null;
             int indexChild = mTvRecyclerView.getSelectedPosition();
-            if (indexChild >= 0 && indexChild < mTvRecyclerView.getChildCount()) {
-                v = mTvRecyclerView.getChildAt(indexChild);
+            if (indexChild >= 0 && indexChild < mTvRecyclerView.getAdapter().getItemCount()) {
+                v = mTvRecyclerView.getSelectedView();
             }
 
             if (v != null) {
@@ -88,8 +88,8 @@ public class FocusBorderView extends View {
             mTvRecyclerView.setLayerType(View.LAYER_TYPE_NONE, null);
             View v = null;
             int indexChild = mTvRecyclerView.getSelectedPosition();
-            if (indexChild >= 0 && indexChild < mTvRecyclerView.getChildCount()) {
-                v = mTvRecyclerView.getChildAt(indexChild);
+            if (indexChild >= 0 && indexChild < mTvRecyclerView.getAdapter().getItemCount()) {
+                v = mTvRecyclerView.getSelectedView();
             }
 
             if (v != null) {
@@ -146,8 +146,8 @@ public class FocusBorderView extends View {
         if (mIsDrawGetFocusAnim || mIsClicked) {
             View itemView = null;
             int indexChild = mTvRecyclerView.getSelectedPosition();
-            if (indexChild >= 0 && indexChild < mTvRecyclerView.getChildCount()) {
-                itemView = mTvRecyclerView.getChildAt(indexChild);
+            if (indexChild >= 0 && indexChild < mTvRecyclerView.getAdapter().getItemCount()) {
+                itemView = mTvRecyclerView.getSelectedView();
             }
 
             if (itemView == null) {
@@ -190,7 +190,7 @@ public class FocusBorderView extends View {
     private void drawFocusMoveAnim(Canvas canvas) {
         if (mTvRecyclerView.mIsDrawFocusMoveAnim) {
             mScroller.abortAnimation();
-            View curView = mTvRecyclerView.getChildAt(mTvRecyclerView.getSelectedPosition());
+            View curView = mTvRecyclerView.getSelectedView();
             View nextView = mTvRecyclerView.getNextFocusView();
 
             if (nextView != null && curView != null) {
@@ -272,7 +272,7 @@ public class FocusBorderView extends View {
 
     private void drawFocus(Canvas canvas) {
         if (!mIsDrawGetFocusAnim && !mTvRecyclerView.mIsDrawFocusMoveAnim && !mIsClicked) {
-            View itemView = mTvRecyclerView.getChildAt(mTvRecyclerView.getSelectedPosition());
+            View itemView = mTvRecyclerView.getSelectedView();
             if (itemView != null) {
                 int[] itemLocation = new int[2];
                 itemView.getLocationInWindow(itemLocation);
