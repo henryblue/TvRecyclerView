@@ -24,6 +24,9 @@ public class TvRecyclerView extends RecyclerView {
     public static final String TAG = "TvRecyclerView";
     private static final float DEFAULT_SELECT_SCALE = 1.04f;
 
+    private static final int SCROLL_NORMAL = 0;
+    private static final int SCROLL_FOLLOW = 1;
+
     private FocusBorderView mFocusBorderView;
 
     protected Drawable mDrawableFocus;
@@ -51,10 +54,6 @@ public class TvRecyclerView extends RecyclerView {
     private boolean mIsAutoProcessFocus;
     private int mOrientation;
 
-    public enum SCROLL_MODE {
-        SCROLL_NORMAL,
-        SCROLL_FOLLOW
-    }
 
     public TvRecyclerView(Context context) {
         this(context, null);
@@ -159,8 +158,8 @@ public class TvRecyclerView extends RecyclerView {
         mDrawableFocus = focusDrawable;
     }
 
-    public void setScrollMode(SCROLL_MODE mode) {
-        mIsFollowScroll = mode == SCROLL_MODE.SCROLL_FOLLOW;
+    public void setScrollMode(int mode) {
+        mIsFollowScroll = mode == SCROLL_FOLLOW;
     }
 
     /**
