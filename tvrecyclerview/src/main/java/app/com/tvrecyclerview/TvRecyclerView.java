@@ -125,8 +125,10 @@ public class TvRecyclerView extends RecyclerView {
         super.setLayoutManager(layoutManager);
         if (layoutManager instanceof LinearLayoutManager) {
             mOrientation = ((LinearLayoutManager)layoutManager).getOrientation();
-            Log.i(TAG, "setLayoutManager: =======orientation==" + mOrientation);
+        } else if (layoutManager instanceof ModuleLayoutManager) {
+            mOrientation = ((ModuleLayoutManager)layoutManager).getOrientation();
         }
+        Log.i(TAG, "setLayoutManager: =======orientation==" + mOrientation);
     }
 
     /**
@@ -446,8 +448,10 @@ public class TvRecyclerView extends RecyclerView {
         if (child != null) {
             Rect ret = new Rect();
             boolean isVisible = child.getLocalVisibleRect(ret);
-            if (isVisible && (ret.width() < child.getWidth())) {
-                return true;
+            if (mOrientation == HORIZONTAL) {
+                return isVisible && (ret.width() < child.getWidth());
+            } else {
+                return isVisible && (ret.height() < child.getHeight());
             }
         }
         return false;

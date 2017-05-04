@@ -28,28 +28,29 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
     private SparseArray<Rect> mItemsRect;
 
     private int mHorizontalOffset;
+    private int mVerticalOffset;
 
-    private int mNumRows;
+    private int mNumRowOrColumn;
 
     private final int mOriItemWidth;
     private final int mOriItemHeight;
-    private int mTotalWidth;
+    private int mTotalSize;
     // re-used variable to acquire decor insets from RecyclerView
     private final Rect mDecorInsets = new Rect();
 
-    public ModuleLayoutManager(int rowCount, int orientation) {
+    public ModuleLayoutManager(int rowOrColumnCount, int orientation) {
         mOrientation = orientation;
         mOriItemWidth = BASE_ITEM_DEFAULT_SIZE;
         mOriItemHeight = BASE_ITEM_DEFAULT_SIZE;
-        mNumRows = rowCount;
+        mNumRowOrColumn = rowOrColumnCount;
         mItemsRect = new SparseArray<>();
     }
 
-    public ModuleLayoutManager(int rowCount, int orientation, int baseItemWidth, int baseItemHeight) {
+    public ModuleLayoutManager(int rowOrColumnCount, int orientation, int baseItemWidth, int baseItemHeight) {
         mOrientation = orientation;
         mOriItemWidth = baseItemWidth;
         mOriItemHeight = baseItemHeight;
-        mNumRows = rowCount;
+        mNumRowOrColumn = rowOrColumnCount;
         mItemsRect = new SparseArray<>();
     }
 
@@ -76,6 +77,7 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
         detachAndScrapAttachedViews(recycler);
 
         mHorizontalOffset = 0;
+        mVerticalOffset = 0;
         fill(recycler, state);
     }
 
@@ -91,20 +93,28 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
 
             // change leftOffset
             int itemStartPos = getItemStartIndex(i);
-            int lastPos = itemStartPos / mNumRows;
             int childHorizontalSpace = getDecoratedMeasurementHorizontal(child);
             int childVerticalSpace = getDecoratedMeasurementVertical(child);
+            int lastPos;
+            int topPos;
+            if (mOrientation == HORIZONTAL) {
+                lastPos = itemStartPos / mNumRowOrColumn;
+                topPos = itemStartPos % mNumRowOrColumn;
+            } else {
+                lastPos = itemStartPos % mNumRowOrColumn;
+                topPos = itemStartPos / mNumRowOrColumn;
+            }
+
             if (lastPos == 0) {
-                leftOffset = childHorizontalSpace * lastPos;
+                leftOffset = 0;
             } else {
                 leftOffset = (mOriItemWidth + getChildHorizontalPadding(child)) * lastPos;
             }
 
-            int topPos = itemStartPos % mNumRows;
             if (topPos == 0) {
-                topOffset = childVerticalSpace * topPos + getPaddingTop();
+                topOffset = 0;
             } else {
-                topOffset = childVerticalSpace * topPos;
+                topOffset = (mOriItemHeight + getChildVerticalPadding(child)) * topPos;
             }
 
             //calculate width includes margin
@@ -114,7 +124,13 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
                     topOffset,
                     leftOffset + childHorizontalSpace,
                     topOffset + childVerticalSpace);
-            mTotalWidth = leftOffset + childHorizontalSpace;
+            if (mOrientation == HORIZONTAL) {
+                mTotalSize = leftOffset + childHorizontalSpace;
+            } else {
+                mTotalSize = topOffset + childVerticalSpace;
+            }
+
+            // Save the current Bound field data for the item view
             Rect frame = mItemsRect.get(i);
             if (frame == null) {
                 frame = new Rect();
@@ -123,7 +139,6 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
                     topOffset,
                     leftOffset + childHorizontalSpace,
                     topOffset + childVerticalSpace);
-            // Save the current Bound field data for the item view
             mItemsRect.put(i, frame);
         }
     }
@@ -177,7 +192,7 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
 
     @Override
     public boolean canScrollHorizontally() {
-        return true;
+        return mOrientation == HORIZONTAL;
     }
 
     @Override
@@ -189,16 +204,54 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
 
         int realOffset = dx;
         if (mHorizontalOffset + dx < 0) {
-            realOffset -= mHorizontalOffset;
-
-        } else if (mHorizontalOffset + dx > mTotalWidth - getHorizontalSpace()) {
-            realOffset = mTotalWidth - getHorizontalSpace() - mHorizontalOffset;
+            if (Math.abs(dx) > mHorizontalOffset) {
+                realOffset = -mHorizontalOffset;
+            } else {
+                realOffset -= mHorizontalOffset;
+            }
+        } else if (mHorizontalOffset + dx > mTotalSize - getHorizontalSpace()) {
+            realOffset = mTotalSize - getHorizontalSpace() - mHorizontalOffset;
         }
         mHorizontalOffset += realOffset;
 
         offsetChildrenHorizontal(realOffset);
         recycleAndFillItems(recycler, state);
         return realOffset;
+    }
+
+    @Override
+    public boolean canScrollVertically() {
+        return mOrientation == VERTICAL;
+    }
+
+    @Override
+    public int scrollVerticallyBy(int dy, RecyclerView.Recycler recycler, RecyclerView.State state) {
+        if (dy == 0 || getChildCount() == 0) {
+            return 0;
+        }
+        detachAndScrapAttachedViews(recycler);
+
+        int realOffset = dy;
+//        int maxScrollSpace = mTotalSize - getVerticalSpace();
+//
+//        if (mVerticalOffset + dy < 0) {
+//            if (Math.abs(dy) > mVerticalOffset) {
+//                realOffset = -mVerticalOffset;
+//            } else {
+//                realOffset -= mVerticalOffset;
+//            }
+//        } else if (mVerticalOffset + dy > maxScrollSpace) {
+//            realOffset = maxScrollSpace - mVerticalOffset;
+//        }
+//        mVerticalOffset += realOffset;
+//
+        offsetChildrenVertical(-realOffset);
+        recycleAndFillItems(recycler, state);
+        return realOffset;
+    }
+
+    public int getOrientation() {
+        return mOrientation;
     }
 
     private int getItemWidth(int position) {
@@ -231,6 +284,13 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
                 child.getLayoutParams();
         return getDecoratedMeasuredWidth(child) + params.leftMargin
                 + params.rightMargin - child.getMeasuredWidth();
+    }
+
+    private int getChildVerticalPadding(View child) {
+        final RecyclerView.MarginLayoutParams params = (RecyclerView.LayoutParams)
+                child.getLayoutParams();
+        return getDecoratedMeasuredHeight(child) + params.topMargin
+                + params.bottomMargin - child.getMeasuredHeight();
     }
 
     private int getDecoratedMeasurementVertical(View view) {
