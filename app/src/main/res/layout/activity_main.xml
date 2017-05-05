@@ -22,7 +22,14 @@
             android:layout_width="200dp"
             android:layout_height="80dp"
             android:textAllCaps="false"
-            android:text="module focus"/>
+            android:text="module focus - horizontal"/>
+
+        <Button
+            android:id="@+id/btn_module_vertical"
+            android:layout_width="200dp"
+            android:layout_height="80dp"
+            android:textAllCaps="false"
+            android:text="module focus - vertical"/>
 
         <Button
             android:id="@+id/btn_auto_focus"
