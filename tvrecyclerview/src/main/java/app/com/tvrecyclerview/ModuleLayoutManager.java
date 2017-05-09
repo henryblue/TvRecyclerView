@@ -25,12 +25,12 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
     private final static int LAYOUT_END = 1;
 
     private int mOrientation;
-    private SparseArray<Rect> mItemsRect;
+    private final SparseArray<Rect> mItemsRect;
 
     private int mHorizontalOffset;
     private int mVerticalOffset;
 
-    private int mNumRowOrColumn;
+    private final int mNumRowOrColumn;
 
     private final int mOriItemWidth;
     private final int mOriItemHeight;

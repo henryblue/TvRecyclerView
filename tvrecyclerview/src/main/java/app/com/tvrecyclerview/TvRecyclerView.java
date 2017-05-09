@@ -7,6 +7,7 @@ import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
@@ -29,9 +30,9 @@ public class TvRecyclerView extends RecyclerView {
 
     private FocusBorderView mFocusBorderView;
 
-    protected Drawable mDrawableFocus;
+    private Drawable mDrawableFocus;
     public boolean mIsDrawFocusMoveAnim;
-    protected float mSelectedScaleValue;
+    private float mSelectedScaleValue;
     private float mFocusMoveAnimScale;
 
     private int mSelectedPosition;
@@ -43,7 +44,7 @@ public class TvRecyclerView extends RecyclerView {
     private int mFocusFrameRight;
     private int mFocusFrameBottom;
 
-    protected boolean mReceivedInvokeKeyDown;
+    private boolean mReceivedInvokeKeyDown;
     protected View mSelectedItem;
     private OnItemStateListener mItemStateListener;
     private Scroller mScrollerFocusMoveAnim;
@@ -194,6 +195,17 @@ public class TvRecyclerView extends RecyclerView {
         if (mItemStateListener != null) {
             mItemStateListener.onItemViewFocusChanged(true, mSelectedItem,
                     getChildAdapterPosition(mSelectedItem));
+        }
+    }
+
+    @Override
+    public boolean isInTouchMode() {
+        boolean result = super.isInTouchMode();
+        // 解决4.4版本抢焦点的问题
+        if (Build.VERSION.SDK_INT == 19) {
+            return !(hasFocus() && !result);
+        } else {
+            return result;
         }
     }
 

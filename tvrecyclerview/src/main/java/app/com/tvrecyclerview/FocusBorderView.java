@@ -13,7 +13,7 @@ public class FocusBorderView extends View {
     private static final String TAG = "FocusBorderView";
 
     private TvRecyclerView mTvRecyclerView;
-    private Scroller mScroller;
+    private final Scroller mScroller;
 
     private float mScaleX;
     private float mScaleY;
