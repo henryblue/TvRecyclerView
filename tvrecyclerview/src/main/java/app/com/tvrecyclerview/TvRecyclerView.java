@@ -78,6 +78,8 @@ public class TvRecyclerView extends RecyclerView {
         mNextFocused = null;
         mInLayout = false;
         mIsFollowScroll = false;
+        mSelectedScaleValue = DEFAULT_SELECT_SCALE;
+        mIsAutoProcessFocus = true;
 
         mFocusFrameLeft = 22;
         mFocusFrameTop = 22;
@@ -86,29 +88,33 @@ public class TvRecyclerView extends RecyclerView {
         mOrientation = HORIZONTAL;
         mScreenWidth = getContext().getResources().getDisplayMetrics().widthPixels;
         mScreenHeight = getContext().getResources().getDisplayMetrics().heightPixels;
-        setChildrenDrawingOrderEnabled(true);
     }
 
     private void setAttributeSet(AttributeSet attrs) {
-        TypedArray typeArray = getContext().obtainStyledAttributes(attrs, R.styleable.TvRecyclerView);
-        int type = typeArray.getInteger(R.styleable.TvRecyclerView_scrollMode, 0);
-        if (type == 1) {
-            mIsFollowScroll = true;
-        }
-        final Drawable drawable = typeArray.getDrawable(R.styleable.TvRecyclerView_focusDrawable);
-        if (drawable != null) {
-            setFocusDrawable(drawable);
-        }
+        if (attrs != null) {
+            TypedArray typeArray = getContext().obtainStyledAttributes(attrs, R.styleable.TvRecyclerView);
+            int type = typeArray.getInteger(R.styleable.TvRecyclerView_scrollMode, 0);
+            if (type == 1) {
+                mIsFollowScroll = true;
+            }
 
-        mSelectedScaleValue = typeArray.getFloat(R.styleable.TvRecyclerView_focusScale, DEFAULT_SELECT_SCALE);
+            final Drawable drawable = typeArray.getDrawable(R.styleable.TvRecyclerView_focusDrawable);
+            if (drawable != null) {
+                setFocusDrawable(drawable);
+            }
 
-        mIsAutoProcessFocus = typeArray.getBoolean(R.styleable.TvRecyclerView_isAutoProcessFocus, true);
-        if (!mIsAutoProcessFocus) {
-            mSelectedScaleValue = 1.0f;
-        } else {
+            mSelectedScaleValue = typeArray.getFloat(R.styleable.TvRecyclerView_focusScale, DEFAULT_SELECT_SCALE);
+            mIsAutoProcessFocus = typeArray.getBoolean(R.styleable.TvRecyclerView_isAutoProcessFocus, true);
+            if (!mIsAutoProcessFocus) {
+                mSelectedScaleValue = 1.0f;
+                setChildrenDrawingOrderEnabled(true);
+            }
+            typeArray.recycle();
+        }
+        if (mIsAutoProcessFocus) {
+            // set TvRecyclerView process Focus
             setDescendantFocusability(ViewGroup.FOCUS_BEFORE_DESCENDANTS);
         }
-        typeArray.recycle();
     }
 
     private void addFlyBorderView(Context context) {
@@ -123,13 +129,13 @@ public class TvRecyclerView extends RecyclerView {
 
     @Override
     public void setLayoutManager(LayoutManager layoutManager) {
-        super.setLayoutManager(layoutManager);
         if (layoutManager instanceof LinearLayoutManager) {
             mOrientation = ((LinearLayoutManager)layoutManager).getOrientation();
         } else if (layoutManager instanceof ModuleLayoutManager) {
             mOrientation = ((ModuleLayoutManager)layoutManager).getOrientation();
         }
         Log.i(TAG, "setLayoutManager: =======orientation==" + mOrientation);
+        super.setLayoutManager(layoutManager);
     }
 
     /**
@@ -251,21 +257,17 @@ public class TvRecyclerView extends RecyclerView {
 
     @Override
     protected int getChildDrawingOrder(int childCount, int i) {
-        int position = indexOfChild(mSelectedItem);
-        if (position < 0) {
+        int focusIndex = indexOfChild(mSelectedItem);
+        if (focusIndex < 0) {
             return i;
-        } else {
-            if (i == childCount - 1) {
-                if (position > i) {
-                    position = i;
-                }
-                return position;
-            }
-            if (i == position) {
-                return childCount - 1;
-            }
         }
-        return i;
+        if (i < focusIndex) {
+            return i;
+        } else if (i < childCount - 1) {
+            return focusIndex + childCount - 1 - i;
+        } else {
+            return focusIndex;
+        }
     }
 
     @Override
