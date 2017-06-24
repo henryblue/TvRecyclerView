@@ -72,7 +72,6 @@ To add gradle dependency you need to open build.gradle (in your app folder,not i
         />
 ```
 
-## XML attributes
 
 | Name | Type | Default | Description |
 |:----:|:----:|:-------:|:-----------:|
