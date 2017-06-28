@@ -45,7 +45,6 @@ public class maulCarouselActivity extends AppCompatActivity {
                         Toast.LENGTH_SHORT).show();
             }
         });
-
     }
 
     private class SpaceItemDecoration extends RecyclerView.ItemDecoration {

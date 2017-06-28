@@ -337,6 +337,52 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
         requestLayout();
     }
 
+    /**
+     * Returns the adapter position of the first visible view. This position does not include
+     * adapter changes that were dispatched after the last layout pass.
+     */
+    public int findFirstVisibleItemPosition() {
+        final View child = findOneVisibleChild(0, getChildCount(), false, true);
+        return child == null ? -1 : getPosition(child);
+    }
+
+    private View findOneVisibleChild(int fromIndex, int toIndex, boolean completelyVisible,
+                             boolean acceptPartiallyVisible) {
+        final int start = getPaddingLeft();
+        final int end = getHeight() - getPaddingBottom();
+        final int next = toIndex > fromIndex ? 1 : -1;
+        View partiallyVisible = null;
+        for (int i = fromIndex; i != toIndex; i+=next) {
+            final View child = getChildAt(i);
+            final int childStart = getDecoratedStart(child);
+            final int childEnd = getDecoratedEnd(child);
+            if (childStart < end && childEnd > start) {
+                if (completelyVisible) {
+                    if (childStart >= start && childEnd <= end) {
+                        return child;
+                    } else if (acceptPartiallyVisible && partiallyVisible == null) {
+                        partiallyVisible = child;
+                    }
+                } else {
+                    return child;
+                }
+            }
+        }
+        return partiallyVisible;
+    }
+
+    private int getDecoratedStart(View view) {
+        final RecyclerView.LayoutParams params = (RecyclerView.LayoutParams)
+                view.getLayoutParams();
+        return getDecoratedTop(view) - params.topMargin;
+    }
+
+    private int getDecoratedEnd(View view) {
+        final RecyclerView.LayoutParams params = (RecyclerView.LayoutParams)
+                view.getLayoutParams();
+        return getDecoratedBottom(view) + params.bottomMargin;
+    }
+
     private int getFirstChildPosition() {
         final int childCount = getChildCount();
         return childCount == 0 ? 0 : getPosition(getChildAt(0));

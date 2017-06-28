@@ -67,7 +67,7 @@ public class ModuleFocusActivity extends AppCompatActivity {
         }
     }
 
-    class MyModuleLayoutManager extends ModuleLayoutManager {
+    private class MyModuleLayoutManager extends ModuleLayoutManager {
 
         MyModuleLayoutManager(int rowCount, int orientation, int baseItemWidth, int baseItemHeight) {
             super(rowCount, orientation, baseItemWidth, baseItemHeight);

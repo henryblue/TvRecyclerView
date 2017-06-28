@@ -54,6 +54,8 @@ public class TvRecyclerView extends RecyclerView {
     private int mScreenHeight;
     private boolean mIsAutoProcessFocus;
     private int mOrientation;
+    private boolean mIsSetItemSelected = false;
+    private boolean mIsNeedMoveForSelect = false;
 
 
     public TvRecyclerView(Context context) {
@@ -68,6 +70,31 @@ public class TvRecyclerView extends RecyclerView {
         super(context, attrs, defStyle);
         init();
         setAttributeSet(attrs);
+        addOnScrollListener(new OnScrollListener() {
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                if (mIsNeedMoveForSelect) {
+                    mIsNeedMoveForSelect = false;
+
+                    int firstVisiblePos = 0;
+                    LayoutManager layoutManager = getLayoutManager();
+                    if (layoutManager instanceof LinearLayoutManager) {
+                        firstVisiblePos = ((LinearLayoutManager)layoutManager)
+                                .findFirstVisibleItemPosition();
+                    } else if (layoutManager instanceof ModuleLayoutManager) {
+                        firstVisiblePos = ((ModuleLayoutManager)layoutManager)
+                                .findFirstVisibleItemPosition();
+                    }
+                    ((LinearLayoutManager) getLayoutManager()).findFirstVisibleItemPosition();
+                    View selectView = getChildAt(mSelectedPosition - firstVisiblePos);
+                    if (selectView != null) {
+                        mSelectedItem = selectView;
+                        adjustSelectOffset(selectView);
+                    }
+                }
+            }
+        });
     }
 
     private void init() {
@@ -176,31 +203,49 @@ public class TvRecyclerView extends RecyclerView {
      * @param position selected item position
      */
     public void setItemSelected(int position) {
-        View selectedView = getChildAt(position);
-        if (selectedView == null) {
-            return;
+        mIsSetItemSelected = true;
+        if (position >= getAdapter().getItemCount()) {
+            position = getAdapter().getItemCount() - 1;
         }
-        mSelectedItem = selectedView;
         mSelectedPosition = position;
-        boolean visibleChild = isVisibleChild(mSelectedItem);
-        boolean halfVisibleChild = isHalfVisibleChild(mSelectedItem);
-        if (!visibleChild || halfVisibleChild) {
-            int dx;
-            if (mSelectedItem.getLeft() > getWidth() / 2) {
-                dx = mSelectedItem.getLeft() + mSelectedItem.getWidth() / 2 - mScreenWidth / 2;
-                smoothScrollBy(dx, 0);
-            } else {
-                dx = mSelectedItem.getRight() + mSelectedItem.getWidth() / 2 - mScreenWidth / 2;
-                smoothScrollBy(dx, 0);
-            }
-        }
-        if (mFocusBorderView != null) {
-            mFocusBorderView.startFocusAnim();
-        }
+        requestLayout();
+    }
 
+    private void adjustSelectMode() {
+        int childCount = getChildCount();
+        if (mSelectedPosition < childCount) {
+            mSelectedItem = getChildAt(mSelectedPosition);
+            adjustSelectOffset(mSelectedItem);
+        } else {
+            mIsNeedMoveForSelect = true;
+            scrollToPosition(mSelectedPosition);
+        }
+    }
+
+    /**
+     * adjust the selected item position to half screen
+     */
+    private void adjustSelectOffset(View selectView) {
+        if (mIsAutoProcessFocus) {
+            scrollOffset(selectView);
+        } else {
+            scrollOffset(selectView);
+            selectView.requestFocus();
+        }
         if (mItemStateListener != null) {
-            mItemStateListener.onItemViewFocusChanged(true, mSelectedItem,
-                    getChildAdapterPosition(mSelectedItem));
+            mItemStateListener.onItemViewFocusChanged(true, selectView,
+                    mSelectedPosition);
+        }
+    }
+
+    private void scrollOffset(View selectView) {
+        int dx;
+        if (mOrientation == HORIZONTAL) {
+            dx = selectView.getLeft() + selectView.getWidth() / 2 - mScreenWidth / 2;
+            scrollBy(dx, 0);
+        } else {
+            dx = selectView.getTop() + selectView.getHeight() / 2 - mScreenHeight / 2;
+            scrollBy(0, dx);
         }
     }
 
@@ -231,7 +276,7 @@ public class TvRecyclerView extends RecyclerView {
                 mSelectedItem = getChildAt(mSelectedPosition);
             }
             mItemStateListener.onItemViewFocusChanged(gainFocus, mSelectedItem,
-                    getChildAdapterPosition(mSelectedItem));
+                    mSelectedPosition);
         }
         if (mFocusBorderView == null) {
             return;
@@ -274,6 +319,10 @@ public class TvRecyclerView extends RecyclerView {
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         mInLayout = true;
         super.onLayout(changed, l, t, r, b);
+        if (mIsSetItemSelected) {
+            adjustSelectMode();
+            mIsSetItemSelected = false;
+        }
         mInLayout = false;
     }
 
@@ -507,7 +556,7 @@ public class TvRecyclerView extends RecyclerView {
         mIsDrawFocusMoveAnim = true;
         if (mItemStateListener != null) {
             mItemStateListener.onItemViewFocusChanged(false, mSelectedItem,
-                    getChildAdapterPosition(mSelectedItem));
+                    mSelectedPosition);
         }
         mScrollerFocusMoveAnim.startScroll(0, 0, 100, 100, 200);
         invalidate();
