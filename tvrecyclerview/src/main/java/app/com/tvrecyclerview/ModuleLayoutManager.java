@@ -76,6 +76,10 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
 
         detachAndScrapAttachedViews(recycler);
 
+        if (mHorizontalOffset > 0 || mVerticalOffset > 0) {
+            recycleAndFillItems(recycler, state);
+            return;
+        }
         mHorizontalOffset = 0;
         mVerticalOffset = 0;
         fill(recycler, state);
@@ -214,7 +218,6 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
         if (dx == 0 || getChildCount() == 0) {
             return 0;
         }
-        detachAndScrapAttachedViews(recycler);
 
         int realOffset = dx;
         int maxScrollSpace = mTotalSize - getHorizontalSpace();
@@ -230,6 +233,7 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
         mHorizontalOffset += realOffset;
 
         offsetChildrenHorizontal(realOffset);
+        detachAndScrapAttachedViews(recycler);
         recycleAndFillItems(recycler, state);
         return realOffset;
     }
@@ -244,7 +248,6 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
         if (dy == 0 || getChildCount() == 0) {
             return 0;
         }
-        detachAndScrapAttachedViews(recycler);
 
         int realOffset = dy;
         int maxScrollSpace = mTotalSize - getVerticalSpace();
@@ -261,6 +264,7 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
         mVerticalOffset += realOffset;
 
         offsetChildrenVertical(-realOffset);
+        detachAndScrapAttachedViews(recycler);
         recycleAndFillItems(recycler, state);
         return realOffset;
     }
@@ -412,5 +416,4 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
         }
         return outVector;
     }
-
 }
