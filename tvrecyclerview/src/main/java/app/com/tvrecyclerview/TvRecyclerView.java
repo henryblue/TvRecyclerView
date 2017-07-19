@@ -161,7 +161,7 @@ public class TvRecyclerView extends RecyclerView {
         } else if (layoutManager instanceof ModuleLayoutManager) {
             mOrientation = ((ModuleLayoutManager)layoutManager).getOrientation();
         }
-        Log.i(TAG, "setLayoutManager: =======orientation==" + mOrientation);
+        Log.i(TAG, "setLayoutManager: ====orientation==" + mOrientation);
         super.setLayoutManager(layoutManager);
     }
 
@@ -257,6 +257,20 @@ public class TvRecyclerView extends RecyclerView {
             return !(hasFocus() && !result);
         } else {
             return result;
+        }
+    }
+
+    /**
+     * 解决获取焦点时, 没有焦点框的问题
+     */
+    @Override
+    public void requestChildFocus(View child, View focused) {
+        if (mSelectedPosition < 0) {
+            mSelectedPosition = getChildLayoutPosition(focused);
+        }
+        super.requestChildFocus(child, focused);
+        if (mIsAutoProcessFocus) {
+            requestFocus();
         }
     }
 
@@ -380,12 +394,10 @@ public class TvRecyclerView extends RecyclerView {
                     return true;
                 }
                 break;
-
             case KeyEvent.KEYCODE_DPAD_CENTER:
             case KeyEvent.KEYCODE_ENTER:
                 mReceivedInvokeKeyDown = true;
                 break;
-
             default:
                 break;
         }
@@ -445,9 +457,6 @@ public class TvRecyclerView extends RecyclerView {
         } else {
             if (mIsDrawFocusMoveAnim) {
                 return true;
-            }
-            if (mNextFocused == null) {
-                return false;
             }
 
             if (!mIsFollowScroll) {
