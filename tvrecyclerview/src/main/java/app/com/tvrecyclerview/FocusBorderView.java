@@ -64,12 +64,7 @@ public class FocusBorderView extends View {
     public void startFocusAnim() {
         if (mTvRecyclerView != null) {
             mTvRecyclerView.setLayerType(View.LAYER_TYPE_NONE, null);
-            View v = null;
-            int indexChild = mTvRecyclerView.getSelectedPosition();
-            if (indexChild >= 0 && indexChild < mTvRecyclerView.getAdapter().getItemCount()) {
-                v = mTvRecyclerView.getSelectedView();
-            }
-
+            View v = mTvRecyclerView.getSelectedView();
             if (v != null) {
                 mIsDrawGetFocusAnim = true;
                 mScroller.abortAnimation();
@@ -144,12 +139,7 @@ public class FocusBorderView extends View {
 
     private void drawGetFocusOrClickScaleAnim(Canvas canvas) {
         if (mIsDrawGetFocusAnim || mIsClicked) {
-            View itemView = null;
-            int indexChild = mTvRecyclerView.getSelectedPosition();
-            if (indexChild >= 0 && indexChild < mTvRecyclerView.getAdapter().getItemCount()) {
-                itemView = mTvRecyclerView.getSelectedView();
-            }
-
+            View itemView = mTvRecyclerView.getSelectedView();
             if (itemView == null) {
                 return;
             }

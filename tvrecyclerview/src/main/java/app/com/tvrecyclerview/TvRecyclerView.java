@@ -73,20 +73,10 @@ public class TvRecyclerView extends RecyclerView {
         addOnScrollListener(new OnScrollListener() {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-                super.onScrolled(recyclerView, dx, dy);
                 if (mIsNeedMoveForSelect) {
                     mIsNeedMoveForSelect = false;
 
-                    int firstVisiblePos = 0;
-                    LayoutManager layoutManager = getLayoutManager();
-                    if (layoutManager instanceof LinearLayoutManager) {
-                        firstVisiblePos = ((LinearLayoutManager)layoutManager)
-                                .findFirstVisibleItemPosition();
-                    } else if (layoutManager instanceof ModuleLayoutManager) {
-                        firstVisiblePos = ((ModuleLayoutManager)layoutManager)
-                                .findFirstVisibleItemPosition();
-                    }
-                    ((LinearLayoutManager) getLayoutManager()).findFirstVisibleItemPosition();
+                    int firstVisiblePos = getFirstVisiblePosition();
                     View selectView = getChildAt(mSelectedPosition - firstVisiblePos);
                     if (selectView != null) {
                         mSelectedItem = selectView;
@@ -154,6 +144,19 @@ public class TvRecyclerView extends RecyclerView {
         }
     }
 
+    private int getFirstVisiblePosition() {
+        int firstVisiblePos = 0;
+        LayoutManager layoutManager = getLayoutManager();
+        if (layoutManager instanceof LinearLayoutManager) {
+            firstVisiblePos = ((LinearLayoutManager)layoutManager)
+                    .findFirstVisibleItemPosition();
+        } else if (layoutManager instanceof ModuleLayoutManager) {
+            firstVisiblePos = ((ModuleLayoutManager)layoutManager)
+                    .findFirstVisibleItemPosition();
+        }
+        return firstVisiblePos;
+    }
+
     @Override
     public void setLayoutManager(LayoutManager layoutManager) {
         if (layoutManager instanceof LinearLayoutManager) {
@@ -183,6 +186,7 @@ public class TvRecyclerView extends RecyclerView {
         mIsAutoProcessFocus = isAuto;
         if (!isAuto) {
             mSelectedScaleValue = 1.0f;
+            setChildrenDrawingOrderEnabled(true);
         } else {
             if (mSelectedScaleValue == 1.0f) {
                 mSelectedScaleValue = DEFAULT_SELECT_SCALE;
@@ -266,7 +270,7 @@ public class TvRecyclerView extends RecyclerView {
     @Override
     public void requestChildFocus(View child, View focused) {
         if (mSelectedPosition < 0) {
-            mSelectedPosition = getChildLayoutPosition(focused);
+            mSelectedPosition = getChildAdapterPosition(focused);
         }
         super.requestChildFocus(child, focused);
         if (mIsAutoProcessFocus) {
@@ -287,7 +291,7 @@ public class TvRecyclerView extends RecyclerView {
         super.onFocusChanged(gainFocus, direction, previouslyFocusedRect);
         if (mItemStateListener != null) {
             if (mSelectedItem == null) {
-                mSelectedItem = getChildAt(mSelectedPosition);
+                mSelectedItem = getChildAt(mSelectedPosition - getFirstVisiblePosition());
             }
             mItemStateListener.onItemViewFocusChanged(gainFocus, mSelectedItem,
                     mSelectedPosition);
@@ -337,6 +341,12 @@ public class TvRecyclerView extends RecyclerView {
             adjustSelectMode();
             mIsSetItemSelected = false;
         }
+
+        // fix issue: when start anim the FocusView location error in AutoProcessFocus mode
+        if (mSelectedPosition >= getAdapter().getItemCount()) {
+            mSelectedPosition = getAdapter().getItemCount() - 1;
+        }
+        mSelectedItem = getChildAt(mSelectedPosition - getFirstVisiblePosition());
         mInLayout = false;
     }
 
