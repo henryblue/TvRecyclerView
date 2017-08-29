@@ -344,6 +344,7 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
     /**
      * Returns the adapter position of the first visible view. This position does not include
      * adapter changes that were dispatched after the last layout pass.
+     * @return the first visible item position or -1
      */
     public int findFirstVisibleItemPosition() {
         final View child = findOneVisibleChild(0, getChildCount(), false, true);

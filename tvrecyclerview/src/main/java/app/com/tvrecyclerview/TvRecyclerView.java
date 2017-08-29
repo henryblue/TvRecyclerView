@@ -8,6 +8,8 @@ import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
@@ -70,6 +72,8 @@ public class TvRecyclerView extends RecyclerView {
         super(context, attrs, defStyle);
         init();
         setAttributeSet(attrs);
+        // 解决问题: 当需要选择的item没有显示在屏幕上, 需要滑动让item显示出来.
+        // 这时需要调整item的位置, 并且item获取焦点
         addOnScrollListener(new OnScrollListener() {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
@@ -207,6 +211,10 @@ public class TvRecyclerView extends RecyclerView {
      * @param position selected item position
      */
     public void setItemSelected(int position) {
+        if (mSelectedPosition == position) {
+            return;
+        }
+
         mIsSetItemSelected = true;
         if (position >= getAdapter().getItemCount()) {
             position = getAdapter().getItemCount() - 1;
@@ -215,6 +223,11 @@ public class TvRecyclerView extends RecyclerView {
         requestLayout();
     }
 
+    /**
+     * the selected item, there are two cases:
+     * 1. item is displayed on the screen
+     * 2. item is not displayed on the screen
+     */
     private void adjustSelectMode() {
         int childCount = getChildCount();
         if (mSelectedPosition < childCount) {
@@ -227,7 +240,7 @@ public class TvRecyclerView extends RecyclerView {
     }
 
     /**
-     * adjust the selected item position to half screen
+     * adjust the selected item position to half screen location
      */
     private void adjustSelectOffset(View selectView) {
         if (mIsAutoProcessFocus) {
@@ -265,7 +278,9 @@ public class TvRecyclerView extends RecyclerView {
     }
 
     /**
-     * 解决获取焦点时, 没有焦点框的问题
+     * fix issue: not have focus box when change focus
+     * @param child child view
+     * @param focused the focused view
      */
     @Override
     public void requestChildFocus(View child, View focused) {
@@ -356,6 +371,23 @@ public class TvRecyclerView extends RecyclerView {
         if (mFocusBorderView != null && mFocusBorderView.getTvRecyclerView() != null) {
             mFocusBorderView.invalidate();
         }
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Parcelable state) {
+        Bundle bundle = (Bundle) state;
+        Parcelable superData = bundle.getParcelable("super_data");
+        super.onRestoreInstanceState(superData);
+        setItemSelected(bundle.getInt("select_pos", 0));
+    }
+
+    @Override
+    protected Parcelable onSaveInstanceState() {
+        Bundle bundle = new Bundle();
+        Parcelable superData = super.onSaveInstanceState();
+        bundle.putParcelable("super_data", superData);
+        bundle.putInt("select_pos", mSelectedPosition);
+        return bundle;
     }
 
     @Override
