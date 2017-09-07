@@ -151,12 +151,14 @@ public class TvRecyclerView extends RecyclerView {
     private int getFirstVisiblePosition() {
         int firstVisiblePos = 0;
         LayoutManager layoutManager = getLayoutManager();
-        if (layoutManager instanceof LinearLayoutManager) {
-            firstVisiblePos = ((LinearLayoutManager)layoutManager)
-                    .findFirstVisibleItemPosition();
-        } else if (layoutManager instanceof ModuleLayoutManager) {
-            firstVisiblePos = ((ModuleLayoutManager)layoutManager)
-                    .findFirstVisibleItemPosition();
+        if (layoutManager != null) {
+            if (layoutManager instanceof LinearLayoutManager) {
+                firstVisiblePos = ((LinearLayoutManager) layoutManager)
+                        .findFirstVisibleItemPosition();
+            } else if (layoutManager instanceof ModuleLayoutManager) {
+                firstVisiblePos = ((ModuleLayoutManager) layoutManager)
+                        .findFirstVisibleItemPosition();
+            }
         }
         return firstVisiblePos;
     }
@@ -358,8 +360,9 @@ public class TvRecyclerView extends RecyclerView {
         }
 
         // fix issue: when start anim the FocusView location error in AutoProcessFocus mode
-        if (mSelectedPosition >= getAdapter().getItemCount()) {
-            mSelectedPosition = getAdapter().getItemCount() - 1;
+        Adapter adapter = getAdapter();
+        if (adapter != null && mSelectedPosition >= adapter.getItemCount()) {
+            mSelectedPosition = adapter.getItemCount() - 1;
         }
         mSelectedItem = getChildAt(mSelectedPosition - getFirstVisiblePosition());
         mInLayout = false;
