@@ -1,5 +1,5 @@
 # TvRecyclerView
-A custom RecyclerView for Android TV end.
+A custom RecyclerView for Android TV end.[中文说明](https://github.com/henryblue/TvRecyclerView/blob/master/README-zh.md)
 
 ## ScreenShot
 <p>
