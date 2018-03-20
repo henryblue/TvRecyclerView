@@ -17,7 +17,7 @@
 ```groovy
 dependencies {
     ......
-    compile 'com.henryblue.library:tvrecyclerview:1.0.6'
+    compile 'com.henryblue.library:tvrecyclerview:1.0.7'
    }
 
 ```

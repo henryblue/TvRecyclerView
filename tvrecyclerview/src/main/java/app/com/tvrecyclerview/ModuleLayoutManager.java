@@ -32,8 +32,8 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
 
     private final int mNumRowOrColumn;
 
-    private final int mOriItemWidth;
-    private final int mOriItemHeight;
+    private int mOriItemWidth;
+    private int mOriItemHeight;
     private int mTotalSize;
     // re-used variable to acquire decor insets from RecyclerView
     private final Rect mDecorInsets = new Rect();
@@ -46,12 +46,28 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
         mItemsRect = new SparseArray<>();
     }
 
-    public ModuleLayoutManager(int rowOrColumnCount, int orientation, int baseItemWidth, int baseItemHeight) {
+    public ModuleLayoutManager(int rowOrColumnCount, int orientation, int baseItemWidth,
+                               int baseItemHeight) {
         mOrientation = orientation;
         mOriItemWidth = baseItemWidth;
         mOriItemHeight = baseItemHeight;
         mNumRowOrColumn = rowOrColumnCount;
         mItemsRect = new SparseArray<>();
+    }
+
+    /**
+     * reset default item row or column.
+     * Avoid the width and height of all items in each row or column
+     * more than the width and height of the parent view.
+     */
+    private void resetItemRowColumnSize() {
+        if (mOrientation == HORIZONTAL) {
+            mOriItemHeight = (getHeight() - (mNumRowOrColumn - 1) * getRowSpacing())
+                             / mNumRowOrColumn;
+        } else {
+            mOriItemWidth = (getWidth() - (mNumRowOrColumn - 1) * getColumnSpacing())
+                             / mNumRowOrColumn;
+        }
     }
 
     @Override
@@ -82,6 +98,7 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
         }
         mHorizontalOffset = 0;
         mVerticalOffset = 0;
+        resetItemRowColumnSize();
         fill(recycler, state);
     }
 
@@ -92,8 +109,8 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
         for (int i = 0; i < itemCount; i++) {
             View child = recycler.getViewForPosition(i);
             calculateItemDecorationsForChild(child, mDecorInsets);
-            addView(child);
             measureChild(child, getItemWidth(i), getItemHeight(i));
+            addView(child);
 
             // change leftOffset
             int itemStartPos = getItemStartIndex(i);
@@ -110,13 +127,13 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
             }
 
             if (lastPos == 0) {
-                leftOffset = 0;
+                leftOffset = -mDecorInsets.left;
             } else {
-                leftOffset = (mOriItemWidth + getChildHorizontalPadding(child)) * lastPos;
+                leftOffset = mOriItemWidth * lastPos + getChildHorizontalPadding(child) * (lastPos - 1);
             }
 
             if (topPos == 0) {
-                topOffset = 0;
+                topOffset = -mDecorInsets.top;
             } else {
                 topOffset = (mOriItemHeight + getChildVerticalPadding(child)) * topPos;
             }
@@ -285,12 +302,6 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
                 + (itemRowSize - 1) * (mDecorInsets.bottom + mDecorInsets.top);
     }
 
-    protected abstract int getItemStartIndex(int position);
-
-    protected abstract int getItemRowSize(int position);
-
-    protected abstract int getItemColumnSize(int position);
-
     private int getDecoratedMeasurementHorizontal(View child) {
         final RecyclerView.MarginLayoutParams params = (RecyclerView.LayoutParams)
                 child.getLayoutParams();
@@ -351,6 +362,23 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
         return child == null ? -1 : getPosition(child);
     }
 
+    @Override
+    public PointF computeScrollVectorForPosition(int targetPosition) {
+        final int direction = calculateScrollDirectionForPosition(targetPosition);
+        PointF outVector = new PointF();
+        if (direction == 0) {
+            return null;
+        }
+        if (mOrientation == HORIZONTAL) {
+            outVector.x = direction;
+            outVector.y = 0;
+        } else {
+            outVector.x = 0;
+            outVector.y = direction;
+        }
+        return outVector;
+    }
+
     private View findOneVisibleChild(int fromIndex, int toIndex, boolean completelyVisible,
                              boolean acceptPartiallyVisible) {
         final int start = getPaddingLeft();
@@ -401,20 +429,13 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
         return position < firstChildPos ? LAYOUT_START : LAYOUT_END;
     }
 
-    @Override
-    public PointF computeScrollVectorForPosition(int targetPosition) {
-        final int direction = calculateScrollDirectionForPosition(targetPosition);
-        PointF outVector = new PointF();
-        if (direction == 0) {
-            return null;
-        }
-        if (mOrientation == HORIZONTAL) {
-            outVector.x = direction;
-            outVector.y = 0;
-        } else {
-            outVector.x = 0;
-            outVector.y = direction;
-        }
-        return outVector;
-    }
+    protected abstract int getItemStartIndex(int position);
+
+    protected abstract int getItemRowSize(int position);
+
+    protected abstract int getItemColumnSize(int position);
+
+    protected  abstract int getColumnSpacing();
+
+    protected abstract int getRowSpacing();
 }

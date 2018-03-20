@@ -99,5 +99,17 @@ public class ModuleFocusActivity extends AppCompatActivity {
                 return 1;
             }
         }
+
+        @Override
+        protected int getColumnSpacing() {
+            return getResources().
+                    getDimensionPixelSize(R.dimen.recyclerView_item_space);
+        }
+
+        @Override
+        protected int getRowSpacing() {
+            return getResources().
+                    getDimensionPixelSize(R.dimen.recyclerView_item_space);
+        }
     }
 }

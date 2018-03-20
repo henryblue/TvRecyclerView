@@ -67,7 +67,7 @@ public class ModuleFocusVerticalActivity extends AppCompatActivity {
         }
     }
 
-    class MyModuleLayoutManager extends ModuleLayoutManager {
+    private class MyModuleLayoutManager extends ModuleLayoutManager {
 
         MyModuleLayoutManager(int rowCount, int orientation, int baseItemWidth, int baseItemHeight) {
             super(rowCount, orientation, baseItemWidth, baseItemHeight);
@@ -98,6 +98,18 @@ public class ModuleFocusVerticalActivity extends AppCompatActivity {
             } else {
                 return 1;
             }
+        }
+
+        @Override
+        protected int getColumnSpacing() {
+            return getResources().
+                    getDimensionPixelSize(R.dimen.recyclerView_item_space);
+        }
+
+        @Override
+        protected int getRowSpacing() {
+            return getResources().
+                    getDimensionPixelSize(R.dimen.recyclerView_item_space);
         }
     }
 }
