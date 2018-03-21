@@ -148,8 +148,8 @@ public class TvRecyclerView extends RecyclerView {
         }
     }
 
-    private int getFirstVisiblePosition() {
-        int firstVisiblePos = 0;
+    public int getFirstVisiblePosition() {
+        int firstVisiblePos = -1;
         LayoutManager layoutManager = getLayoutManager();
         if (layoutManager != null) {
             if (layoutManager instanceof LinearLayoutManager) {
@@ -161,6 +161,21 @@ public class TvRecyclerView extends RecyclerView {
             }
         }
         return firstVisiblePos;
+    }
+
+    public int getLastVisiblePosition() {
+        int lastVisiblePos = -1;
+        LayoutManager layoutManager = getLayoutManager();
+        if (layoutManager != null) {
+            if (layoutManager instanceof LinearLayoutManager) {
+                lastVisiblePos = ((LinearLayoutManager) layoutManager)
+                        .findLastVisibleItemPosition();
+            } else if (layoutManager instanceof ModuleLayoutManager) {
+                lastVisiblePos = ((ModuleLayoutManager) layoutManager)
+                        .findLastVisibleItemPosition();
+            }
+        }
+        return lastVisiblePos;
     }
 
     @Override

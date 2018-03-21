@@ -171,11 +171,11 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
 
         Rect displayFrame;
         if (mOrientation == HORIZONTAL) {
-            displayFrame = new Rect(mHorizontalOffset, 0,
-                    mHorizontalOffset + getHorizontalSpace(), getVerticalSpace());
+            displayFrame = new Rect(mHorizontalOffset - getColumnSpacing(), 0,
+                    mHorizontalOffset + getHorizontalSpace() + getColumnSpacing(), getVerticalSpace());
         } else {
-            displayFrame = new Rect(0, mVerticalOffset,
-                    getHorizontalSpace(), mVerticalOffset + getVerticalSpace());
+            displayFrame = new Rect(0, mVerticalOffset - getRowSpacing(),
+                    getHorizontalSpace(), mVerticalOffset + getVerticalSpace() + getRowSpacing());
         }
 
         //item view that slide out of the screen will return Recycle cache
@@ -357,8 +357,18 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
      * adapter changes that were dispatched after the last layout pass.
      * @return the first visible item position or -1
      */
-    public int findFirstVisibleItemPosition() {
+    int findFirstVisibleItemPosition() {
         final View child = findOneVisibleChild(0, getChildCount(), false, true);
+        return child == null ? -1 : getPosition(child);
+    }
+
+    /**
+     * Returns the adapter position of the last visible view. This position does not include
+     * adapter changes that were dispatched after the last layout pass.
+     * @return the last visible item position or -1
+     */
+    int findLastVisibleItemPosition() {
+        final View child = findOneVisibleChild(getChildCount() - 1, -1, false, true);
         return child == null ? -1 : getPosition(child);
     }
 
