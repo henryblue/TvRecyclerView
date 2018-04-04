@@ -429,16 +429,16 @@ public class TvRecyclerView extends RecyclerView {
                 Log.i(TAG, "dispatchKeyEvent: get next focus item error: " + e.getMessage());
                 mNextFocused = null;
             }
-        }
 
-        if (!mIsAutoProcessFocus) {
-            processMoves(event.getKeyCode());
-            if (mNextFocused != null) {
-                mSelectedItem = mNextFocused;
-            } else {
-                mSelectedItem = getFocusedChild();
+            if (!mIsAutoProcessFocus) {
+                processMoves(event.getKeyCode());
+                if (mNextFocused != null) {
+                    mSelectedItem = mNextFocused;
+                } else {
+                    mSelectedItem = getFocusedChild();
+                }
+                mSelectedPosition = getChildAdapterPosition(mSelectedItem);
             }
-            mSelectedPosition = getChildAdapterPosition(mSelectedItem);
         }
         return super.dispatchKeyEvent(event);
     }

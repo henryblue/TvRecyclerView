@@ -86,6 +86,7 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
             detachAndScrapAttachedViews(recycler);
             return;
         }
+
         if (getChildCount() == 0 && state.isPreLayout()) {
             return;
         }
@@ -178,7 +179,6 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
                     getHorizontalSpace(), mVerticalOffset + getVerticalSpace() + getRowSpacing());
         }
 
-        //item view that slide out of the screen will return Recycle cache
         Rect childFrame = new Rect();
         int childCount = getChildCount();
         for (int i = 0; i < childCount; i++) {
@@ -212,6 +212,10 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
                             frame.right,
                             frame.bottom - mVerticalOffset);
                 }
+            } else {
+                //item view that slide out of the screen will return Recycle cache
+                View recyclerChild = recycler.getViewForPosition(i);
+                removeAndRecycleView(recyclerChild, recycler);
             }
         }
     }
@@ -279,7 +283,6 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
             realOffset = maxScrollSpace - mVerticalOffset;
         }
         mVerticalOffset += realOffset;
-
         offsetChildrenVertical(-realOffset);
         detachAndScrapAttachedViews(recycler);
         recycleAndFillItems(recycler, state);
