@@ -130,13 +130,13 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
             if (lastPos == 0) {
                 leftOffset = -mDecorInsets.left;
             } else {
-                leftOffset = mOriItemWidth * lastPos + getChildHorizontalPadding(child) * (lastPos - 1);
+                leftOffset = (mOriItemWidth + getChildHorizontalPadding(child)) * lastPos - mDecorInsets.left;
             }
 
             if (topPos == 0) {
                 topOffset = -mDecorInsets.top;
             } else {
-                topOffset = (mOriItemHeight + getChildVerticalPadding(child)) * topPos;
+                topOffset = (mOriItemHeight + getChildVerticalPadding(child)) * topPos - mDecorInsets.top;
             }
 
             //calculate width includes margin
