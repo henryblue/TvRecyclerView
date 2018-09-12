@@ -99,57 +99,32 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
         }
         mHorizontalOffset = 0;
         mVerticalOffset = 0;
+        mItemsRect.clear();
         resetItemRowColumnSize();
         fill(recycler, state);
     }
 
     private void fill(RecyclerView.Recycler recycler, RecyclerView.State state) {
-        int leftOffset;
-        int topOffset;
-        int itemCount = getItemCount();
-        for (int i = 0; i < itemCount; i++) {
+        int itemsCount = state.getItemCount();
+        for (int i = 0; i < itemsCount; i++) {
             View child = recycler.getViewForPosition(i);
-            calculateItemDecorationsForChild(child, mDecorInsets);
-            measureChild(child, getItemWidth(i), getItemHeight(i));
+            Rect itemRect = calculateViewSizeByPosition(child, i);
+            if (!Rect.intersects(getDisplayRect(), itemRect)) {
+                break;
+            }
+
             addView(child);
-
-            // change leftOffset
-            int itemStartPos = getItemStartIndex(i);
-            int childHorizontalSpace = getDecoratedMeasurementHorizontal(child);
-            int childVerticalSpace = getDecoratedMeasurementVertical(child);
-            int lastPos;
-            int topPos;
-            if (mOrientation == HORIZONTAL) {
-                lastPos = itemStartPos / mNumRowOrColumn;
-                topPos = itemStartPos % mNumRowOrColumn;
-            } else {
-                lastPos = itemStartPos % mNumRowOrColumn;
-                topPos = itemStartPos / mNumRowOrColumn;
-            }
-
-            if (lastPos == 0) {
-                leftOffset = -mDecorInsets.left;
-            } else {
-                leftOffset = (mOriItemWidth + getChildHorizontalPadding(child)) * lastPos - mDecorInsets.left;
-            }
-
-            if (topPos == 0) {
-                topOffset = -mDecorInsets.top;
-            } else {
-                topOffset = (mOriItemHeight + getChildVerticalPadding(child)) * topPos - mDecorInsets.top;
-            }
-
             //calculate width includes margin
-            layoutDecoratedWithMargins(
-                    child,
-                    leftOffset,
-                    topOffset,
-                    leftOffset + childHorizontalSpace,
-                    topOffset + childVerticalSpace);
+            layoutDecoratedWithMargins(child,
+                    itemRect.left,
+                    itemRect.top,
+                    itemRect.right,
+                    itemRect.bottom);
+
             if (mOrientation == HORIZONTAL) {
-                mTotalSize = leftOffset + childHorizontalSpace;
+                mTotalSize = itemRect.right;
             } else {
-                mTotalSize = topOffset + childVerticalSpace;
+                mTotalSize = itemRect.bottom;
             }
 
             // Save the current Bound field data for the item view
@@ -157,12 +132,67 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
             if (frame == null) {
                 frame = new Rect();
             }
-            frame.set(leftOffset + mHorizontalOffset,
-                    topOffset,
-                    leftOffset + childHorizontalSpace,
-                    topOffset + childVerticalSpace);
+            frame.set(itemRect);
             mItemsRect.put(i, frame);
         }
+    }
+
+    private Rect calculateViewSizeByPosition(View child, int position) {
+        if (position >= getItemCount()) {
+            throw new IllegalArgumentException("position outside of itemCount position is "
+                    + position + " itemCount is " + getItemCount());
+        }
+
+        int leftOffset;
+        int topOffset;
+        Rect childFrame = new Rect();
+
+        calculateItemDecorationsForChild(child, mDecorInsets);
+        measureChild(child, getItemWidth(position), getItemHeight(position));
+        int itemStartPos = getItemStartIndex(position);
+        int childHorizontalSpace = getDecoratedMeasurementHorizontal(child);
+        int childVerticalSpace = getDecoratedMeasurementVertical(child);
+        int lastPos;
+        int topPos;
+        if (mOrientation == HORIZONTAL) {
+            lastPos = itemStartPos / mNumRowOrColumn;
+            topPos = itemStartPos % mNumRowOrColumn;
+        } else {
+            lastPos = itemStartPos % mNumRowOrColumn;
+            topPos = itemStartPos / mNumRowOrColumn;
+        }
+
+        if (lastPos == 0) {
+            leftOffset = -mDecorInsets.left;
+        } else {
+            leftOffset = (mOriItemWidth + getChildHorizontalPadding(child)) * lastPos
+                    - mDecorInsets.left;
+        }
+
+        if (topPos == 0) {
+            topOffset = -mDecorInsets.top;
+        } else {
+            topOffset = (mOriItemHeight + getChildVerticalPadding(child)) * topPos
+                    - mDecorInsets.top;
+        }
+
+        childFrame.left = leftOffset;
+        childFrame.top = topOffset;
+        childFrame.right = leftOffset + childHorizontalSpace;
+        childFrame.bottom = topOffset + childVerticalSpace;
+        return childFrame;
+    }
+
+    private Rect getDisplayRect() {
+        Rect displayFrame;
+        if (mOrientation == HORIZONTAL) {
+            displayFrame = new Rect(mHorizontalOffset - getPaddingLeft(), 0,
+                    mHorizontalOffset + getHorizontalSpace() + getPaddingRight(), getVerticalSpace());
+        } else {
+            displayFrame = new Rect(0, mVerticalOffset - getPaddingTop(),
+                    getHorizontalSpace(), mVerticalOffset + getVerticalSpace() + getPaddingBottom());
+        }
+        return displayFrame;
     }
 
     private void recycleAndFillItems(RecyclerView.Recycler recycler, RecyclerView.State state) {
@@ -170,52 +200,59 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
             return;
         }
 
-        Rect displayFrame;
-        if (mOrientation == HORIZONTAL) {
-            displayFrame = new Rect(mHorizontalOffset - getColumnSpacing(), 0,
-                    mHorizontalOffset + getHorizontalSpace() + getColumnSpacing(), getVerticalSpace());
-        } else {
-            displayFrame = new Rect(0, mVerticalOffset - getRowSpacing(),
-                    getHorizontalSpace(), mVerticalOffset + getVerticalSpace() + getRowSpacing());
-        }
+        int itemCount = getItemCount();
+        int rectCount;
 
-        Rect childFrame = new Rect();
-        int childCount = getChildCount();
-        for (int i = 0; i < childCount; i++) {
-            View child = getChildAt(i);
-            childFrame.left = getDecoratedLeft(child);
-            childFrame.top = getDecoratedTop(child);
-            childFrame.right = getDecoratedRight(child);
-            childFrame.bottom = getDecoratedBottom(child);
-            if (!Rect.intersects(displayFrame, childFrame)) {
-                removeAndRecycleView(child, recycler);
-            }
-        }
-
-        //Re-display the subview that needs to appear on the screen
-        for (int i = 0; i < getItemCount(); i++) {
-            if (Rect.intersects(displayFrame, mItemsRect.get(i))) {
-                View scrap = recycler.getViewForPosition(i);
-                measureChild(scrap, getItemWidth(i), getItemHeight(i));
-                addView(scrap);
-                Rect frame = mItemsRect.get(i);
-                if (mOrientation == HORIZONTAL) {
-                    layoutDecorated(scrap,
-                            frame.left - mHorizontalOffset,
-                            frame.top,
-                            frame.right - mHorizontalOffset,
-                            frame.bottom);
-                } else {
-                    layoutDecorated(scrap,
-                            frame.left,
-                            frame.top - mVerticalOffset,
-                            frame.right,
-                            frame.bottom - mVerticalOffset);
+        // Re-display the subview that needs to appear on the screen
+        for (int i = 0; i < itemCount; i++) {
+            rectCount = mItemsRect.size();
+            Rect frame = mItemsRect.get(i);
+            if (i < rectCount && frame != null) {
+                if (Rect.intersects(getDisplayRect(), frame)) {
+                    View scrap = recycler.getViewForPosition(i);
+                    addView(scrap);
+                    measureChild(scrap, getItemWidth(i), getItemHeight(i));
+                    if (mOrientation == HORIZONTAL) {
+                        layoutDecoratedWithMargins(scrap,
+                                frame.left - mHorizontalOffset,
+                                frame.top,
+                                frame.right - mHorizontalOffset,
+                                frame.bottom);
+                    } else {
+                        layoutDecoratedWithMargins(scrap,
+                                frame.left,
+                                frame.top - mVerticalOffset,
+                                frame.right,
+                                frame.bottom - mVerticalOffset);
+                    }
                 }
-            } else {
-                //item view that slide out of the screen will return Recycle cache
-                View recyclerChild = recycler.getViewForPosition(i);
-                removeAndRecycleView(recyclerChild, recycler);
+            } else if (rectCount < itemCount) {
+                View child = recycler.getViewForPosition(i);
+                Rect itemRect = calculateViewSizeByPosition(child, i);
+                if (!Rect.intersects(getDisplayRect(), itemRect)) break;
+
+                addView(child);
+                if (mOrientation == HORIZONTAL) {
+                    layoutDecoratedWithMargins(child,
+                            itemRect.left - mHorizontalOffset,
+                            itemRect.top,
+                            itemRect.right - mHorizontalOffset,
+                            itemRect.bottom);
+                    mTotalSize = itemRect.right;
+                } else {
+                    layoutDecoratedWithMargins(child,
+                            itemRect.left,
+                            itemRect.top - mVerticalOffset,
+                            itemRect.right,
+                            itemRect.bottom - mVerticalOffset);
+                    mTotalSize = itemRect.bottom;
+                }
+
+                if (frame == null) {
+                    frame = new Rect();
+                }
+                frame.set(itemRect);
+                mItemsRect.put(i, frame);
             }
         }
     }
@@ -248,7 +285,8 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
             } else {
                 realOffset -= mHorizontalOffset;
             }
-        } else if (mHorizontalOffset + dx > maxScrollSpace) {
+        } else if (mItemsRect.size() >= getItemCount() &&
+                mHorizontalOffset + dx > maxScrollSpace) {
             realOffset = maxScrollSpace - mHorizontalOffset;
         }
         mHorizontalOffset += realOffset;
@@ -279,7 +317,8 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
             } else {
                 realOffset -= mVerticalOffset;
             }
-        } else if (mVerticalOffset + dy > maxScrollSpace) {
+        } else if (mItemsRect.size() >= getItemCount() &&
+                mVerticalOffset + dy > maxScrollSpace) {
             realOffset = maxScrollSpace - mVerticalOffset;
         }
         mVerticalOffset += realOffset;
