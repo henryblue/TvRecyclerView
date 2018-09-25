@@ -8,6 +8,8 @@ import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
 
+import java.util.ArrayList;
+
 
 public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager implements
         RecyclerView.SmoothScroller.ScrollVectorProvider {
@@ -35,15 +37,15 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
     private int mOriItemWidth;
     private int mOriItemHeight;
     private int mTotalSize;
+
+    private int maxLayoutFillSize = 40;
+
     // re-used variable to acquire decor insets from RecyclerView
     private final Rect mDecorInsets = new Rect();
 
     public ModuleLayoutManager(int rowOrColumnCount, int orientation) {
-        mOrientation = orientation;
-        mOriItemWidth = BASE_ITEM_DEFAULT_SIZE;
-        mOriItemHeight = BASE_ITEM_DEFAULT_SIZE;
-        mNumRowOrColumn = rowOrColumnCount;
-        mItemsRect = new SparseArray<>();
+        this(rowOrColumnCount, orientation, BASE_ITEM_DEFAULT_SIZE,
+                BASE_ITEM_DEFAULT_SIZE);
     }
 
     public ModuleLayoutManager(int rowOrColumnCount, int orientation, int baseItemWidth,
@@ -93,10 +95,6 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
 
         detachAndScrapAttachedViews(recycler);
 
-        if (mHorizontalOffset > 0 || mVerticalOffset > 0) {
-            recycleAndFillItems(recycler, state);
-            return;
-        }
         mHorizontalOffset = 0;
         mVerticalOffset = 0;
         mItemsRect.clear();
@@ -107,12 +105,10 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
     private void fill(RecyclerView.Recycler recycler, RecyclerView.State state) {
         int itemsCount = state.getItemCount();
         for (int i = 0; i < itemsCount; i++) {
+            if (i >= maxLayoutFillSize) break;
+
             View child = recycler.getViewForPosition(i);
             Rect itemRect = calculateViewSizeByPosition(child, i);
-            if (!Rect.intersects(getDisplayRect(), itemRect)) {
-                break;
-            }
-
             addView(child);
             //calculate width includes margin
             layoutDecoratedWithMargins(child,
@@ -195,20 +191,63 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
         return displayFrame;
     }
 
-    private void recycleAndFillItems(RecyclerView.Recycler recycler, RecyclerView.State state) {
+    private int findLastViewLayoutPosition() {
+        int lastPos = getChildCount();
+        if (lastPos > 0) {
+            lastPos = getPosition(getChildAt(lastPos - 1));
+        }
+        return lastPos;
+    }
+
+    private void recycleAndFillItems(RecyclerView.Recycler recycler, RecyclerView.State state, int dt) {
         if (state.isPreLayout()) {
             return;
         }
+        recycleByScrollState(recycler, dt);
 
+        if (dt >= 0) {
+            int beginPos = findLastViewLayoutPosition() + 1;
+            fillRequireItems(recycler, beginPos);
+        } else {
+            int endPos = findLastViewLayoutPosition() - mNumRowOrColumn;
+            for (int i = endPos; i >= 0; i--) {
+                Rect frame = mItemsRect.get(i);
+                if (Rect.intersects(getDisplayRect(), frame)) {
+                    if (findViewByPosition(i) != null) {
+                        continue;
+                    }
+
+                    View scrap = recycler.getViewForPosition(i);
+                    addView(scrap, 0);
+                    measureChild(scrap, getItemWidth(i), getItemHeight(i));
+                    if (mOrientation == HORIZONTAL) {
+                        layoutDecoratedWithMargins(scrap,
+                                frame.left - mHorizontalOffset,
+                                frame.top,
+                                frame.right - mHorizontalOffset,
+                                frame.bottom);
+                    } else {
+                        layoutDecoratedWithMargins(scrap,
+                                frame.left,
+                                frame.top - mVerticalOffset,
+                                frame.right,
+                                frame.bottom - mVerticalOffset);
+                    }
+                }
+            }
+        }
+    }
+
+    private void fillRequireItems(RecyclerView.Recycler recycler, int beginPos) {
         int itemCount = getItemCount();
+        Rect displayRect = getDisplayRect();
         int rectCount;
-
         // Re-display the subview that needs to appear on the screen
-        for (int i = 0; i < itemCount; i++) {
+        for (int i = beginPos; i < itemCount; i++) {
             rectCount = mItemsRect.size();
             Rect frame = mItemsRect.get(i);
             if (i < rectCount && frame != null) {
-                if (Rect.intersects(getDisplayRect(), frame)) {
+                if (Rect.intersects(displayRect, frame)) {
                     View scrap = recycler.getViewForPosition(i);
                     addView(scrap);
                     measureChild(scrap, getItemWidth(i), getItemHeight(i));
@@ -229,9 +268,9 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
             } else if (rectCount < itemCount) {
                 View child = recycler.getViewForPosition(i);
                 Rect itemRect = calculateViewSizeByPosition(child, i);
-                if (!Rect.intersects(getDisplayRect(), itemRect)) break;
-
+                if (!Rect.intersects(displayRect, itemRect)) break;
                 addView(child);
+                measureChild(child, getItemWidth(i), getItemHeight(i));
                 if (mOrientation == HORIZONTAL) {
                     layoutDecoratedWithMargins(child,
                             itemRect.left - mHorizontalOffset,
@@ -253,6 +292,58 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
                 }
                 frame.set(itemRect);
                 mItemsRect.put(i, frame);
+            }
+        }
+    }
+
+    private boolean recycleByScrollState(RecyclerView.Recycler recycler, int dt) {
+        final int childCount = getChildCount();
+        ArrayList<Integer> recycleIndexList = new ArrayList<>();
+        Rect displayRect = getDisplayRect();
+        if (dt >= 0) {
+            for (int i = 0; i < childCount; i++) {
+                View child = getChildAt(i);
+                int pos = getPosition(child);
+                Rect frame = mItemsRect.get(pos);
+                if (!Rect.intersects(displayRect, frame)) {
+                    recycleIndexList.add(i);
+                }
+            }
+        } else {
+            for (int i = childCount - 1; i >= 0; i--) {
+                View child = getChildAt(i);
+                int pos = getPosition(child);
+                Rect frame = mItemsRect.get(pos);
+                if (!Rect.intersects(displayRect, frame)) {
+                    recycleIndexList.add(i);
+                }
+            }
+        }
+        if (recycleIndexList.size() > 0) {
+            recycleChildren(recycler, dt, recycleIndexList);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Recycles children between given index.
+     *
+     * @param dt direction
+     * @param recycleIndexList   save need recycle index
+     */
+    private void recycleChildren(RecyclerView.Recycler recycler, int dt,
+                                 ArrayList<Integer> recycleIndexList) {
+        int size = recycleIndexList.size();
+        if (dt < 0) {
+            for (int i = 0; i < size; i++) {
+                int pos = recycleIndexList.get(i);
+                removeAndRecycleViewAt(pos, recycler);
+            }
+        } else {
+            for (int i = size - 1; i >= 0; i--) {
+                int pos = recycleIndexList.get(i);
+                removeAndRecycleViewAt(pos, recycler);
             }
         }
     }
@@ -290,10 +381,10 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
             realOffset = maxScrollSpace - mHorizontalOffset;
         }
         mHorizontalOffset += realOffset;
-
-        offsetChildrenHorizontal(realOffset);
-        detachAndScrapAttachedViews(recycler);
-        recycleAndFillItems(recycler, state);
+        offsetChildrenHorizontal(-realOffset);
+        if (mHorizontalOffset != 0) {
+            recycleAndFillItems(recycler, state, dx);
+        }
         return realOffset;
     }
 
@@ -323,13 +414,18 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
         }
         mVerticalOffset += realOffset;
         offsetChildrenVertical(-realOffset);
-        detachAndScrapAttachedViews(recycler);
-        recycleAndFillItems(recycler, state);
+        if (mVerticalOffset != 0) {
+            recycleAndFillItems(recycler, state, dy);
+        }
         return realOffset;
     }
 
     public int getOrientation() {
         return mOrientation;
+    }
+
+    public void setMaxLayoutSize(int size) {
+        maxLayoutFillSize = size;
     }
 
     private int getItemWidth(int position) {
