@@ -38,7 +38,6 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
     private int mOriItemHeight;
     private int mTotalSize;
 
-    private int maxLayoutFillSize = 40;
 
     // re-used variable to acquire decor insets from RecyclerView
     private final Rect mDecorInsets = new Rect();
@@ -104,11 +103,14 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
 
     private void fill(RecyclerView.Recycler recycler, RecyclerView.State state) {
         int itemsCount = state.getItemCount();
+        Rect displayRect = getDisplayRect();
         for (int i = 0; i < itemsCount; i++) {
-            if (i >= maxLayoutFillSize) break;
-
             View child = recycler.getViewForPosition(i);
             Rect itemRect = calculateViewSizeByPosition(child, i);
+            if (!Rect.intersects(displayRect, itemRect)) {
+                recycler.recycleView(child);
+                break;
+            }
             addView(child);
             //calculate width includes margin
             layoutDecoratedWithMargins(child,
@@ -209,7 +211,7 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
             int beginPos = findLastViewLayoutPosition() + 1;
             fillRequireItems(recycler, beginPos);
         } else {
-            int endPos = findLastViewLayoutPosition() - mNumRowOrColumn;
+            int endPos = findFirstVisibleItemPosition() + mNumRowOrColumn;
             for (int i = endPos; i >= 0; i--) {
                 Rect frame = mItemsRect.get(i);
                 if (Rect.intersects(getDisplayRect(), frame)) {
@@ -268,9 +270,11 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
             } else if (rectCount < itemCount) {
                 View child = recycler.getViewForPosition(i);
                 Rect itemRect = calculateViewSizeByPosition(child, i);
-                if (!Rect.intersects(displayRect, itemRect)) break;
+                if (!Rect.intersects(displayRect, itemRect)) {
+                    recycler.recycleView(child);
+                    return;
+                }
                 addView(child);
-                measureChild(child, getItemWidth(i), getItemHeight(i));
                 if (mOrientation == HORIZONTAL) {
                     layoutDecoratedWithMargins(child,
                             itemRect.left - mHorizontalOffset,
@@ -349,12 +353,20 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
     }
 
     public void measureChild(View child, int childWidth, int childHeight) {
-        final ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) child.getLayoutParams();
-        int width = Math.max(0, childWidth - lp.leftMargin - lp.rightMargin);
-        int height = Math.max(0, childHeight - lp.topMargin - lp.bottomMargin);
-        int childWidthSpec = View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY);
-        int childHeightSpec = View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY);
-        child.measure(childWidthSpec, childHeightSpec);
+        final RecyclerView.LayoutParams lp = (RecyclerView.LayoutParams) child.getLayoutParams();
+
+        calculateItemDecorationsForChild(child, mDecorInsets);
+
+        final int widthSpec = getChildMeasureSpec(getWidth(), getWidthMode(),
+                getPaddingLeft() + getPaddingRight() +
+                        lp.leftMargin + lp.rightMargin, childWidth,
+                canScrollHorizontally());
+        final int heightSpec = getChildMeasureSpec(getHeight(), getHeightMode(),
+                getPaddingTop() + getPaddingBottom() +
+                        lp.topMargin + lp.bottomMargin, childHeight,
+                canScrollVertically());
+
+        child.measure(widthSpec, heightSpec);
     }
 
     @Override
@@ -422,10 +434,6 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
 
     public int getOrientation() {
         return mOrientation;
-    }
-
-    public void setMaxLayoutSize(int size) {
-        maxLayoutFillSize = size;
     }
 
     private int getItemWidth(int position) {
