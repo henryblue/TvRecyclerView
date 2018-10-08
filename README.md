@@ -65,8 +65,8 @@ To add gradle dependency you need to open build.gradle (in your app folder,not i
     <app.com.tvrecyclerview.TvRecyclerView
         ...
         app:scrollMode="followScroll"
-        app:isAutoProcessFocus="false"
-        app:focusScale="1.04f"
+        app:isAutoProcessFocus="true"
+        app:focusScale="1.04"
         app:focusDrawable="@drawable/default_focus"
         ...
         />
@@ -77,8 +77,8 @@ To add gradle dependency you need to open build.gradle (in your app folder,not i
 |:----:|:----:|:-------:|:-----------:|
 |scrollMode|enum|normalScroll| Set the way to slide |
 |isAutoProcessFocus|boolean|true| Sets the focus of the control |
-|focusScale|Float|1.04f| Set the focus scale. If 'isAutoProcessFocus' is true, this property has no effect, always equal 1.0f |
-|focusDrawable|reference|null| set focus drawable, If 'isAutoProcessFocus' is true, this property has no effect |
+|focusScale|Float|1.04| Set the focus scale. If 'isAutoProcessFocus' is false, this property has no effect, always equal 1.0f |
+|focusDrawable|reference|null| set focus drawable, If 'isAutoProcessFocus' is false, this property has no effect |
 
 ## Public Methods
 
