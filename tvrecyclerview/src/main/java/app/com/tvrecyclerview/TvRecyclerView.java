@@ -379,7 +379,9 @@ public class TvRecyclerView extends RecyclerView {
         if (adapter != null && mSelectedPosition >= adapter.getItemCount()) {
             mSelectedPosition = adapter.getItemCount() - 1;
         }
-        mSelectedItem = getChildAt(mSelectedPosition - getFirstVisiblePosition());
+        int selectPos = mSelectedPosition - getFirstVisiblePosition();
+        selectPos = selectPos < 0 ? 0 : selectPos;
+        mSelectedItem = getChildAt(selectPos);
         mInLayout = false;
     }
 
