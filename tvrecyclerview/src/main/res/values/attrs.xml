@@ -2,8 +2,9 @@
 <resources>
 
     <attr name="scrollMode" >
-        <enum name="normalScroll" value="0"/>
+        <enum name="alignScroll" value="0"/>
         <enum name="followScroll" value="1"/>
+        <enum name="normalScroll" value="2" />
     </attr>
 
     <declare-styleable name="TvRecyclerView">

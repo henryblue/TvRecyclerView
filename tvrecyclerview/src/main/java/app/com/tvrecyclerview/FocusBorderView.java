@@ -8,6 +8,8 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Scroller;
 
+import static app.com.tvrecyclerview.TvRecyclerView.DEBUG;
+
 public class FocusBorderView extends View {
 
     private static final String TAG = "FocusBorderView";
@@ -139,6 +141,10 @@ public class FocusBorderView extends View {
 
     private void drawGetFocusOrClickScaleAnim(Canvas canvas) {
         if (mIsDrawGetFocusAnim || mIsClicked) {
+            if (DEBUG) {
+                Log.d(TAG, "drawGetFocusOrClickScaleAnim: ==isClicked=" + mIsClicked
+                + "=GetFocusAnim=" + mIsDrawGetFocusAnim);
+            }
             View itemView = mTvRecyclerView.getSelectedView();
             if (itemView == null) {
                 return;
@@ -179,6 +185,9 @@ public class FocusBorderView extends View {
 
     private void drawFocusMoveAnim(Canvas canvas) {
         if (mTvRecyclerView.mIsDrawFocusMoveAnim) {
+            if (DEBUG) {
+                Log.d(TAG, "drawFocusMoveAnim: ==============");
+            }
             mScroller.abortAnimation();
             View curView = mTvRecyclerView.getSelectedView();
             View nextView = mTvRecyclerView.getNextFocusView();

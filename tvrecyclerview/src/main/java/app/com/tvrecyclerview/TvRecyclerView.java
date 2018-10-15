@@ -25,10 +25,13 @@ import static android.view.KeyEvent.KEYCODE_DPAD_RIGHT;
 public class TvRecyclerView extends RecyclerView {
 
     public static final String TAG = "TvRecyclerView";
+    static final boolean DEBUG = true;
     private static final float DEFAULT_SELECT_SCALE = 1.04f;
+    private static final int NORMAL_SCROLL_COMPENSATION_VAL = 45;
 
-    private static final int SCROLL_NORMAL = 0;
+    private static final int SCROLL_ALIGN = 0;
     private static final int SCROLL_FOLLOW = 1;
+    private static final int SCROLL_NORMAL = 2;
 
     private FocusBorderView mFocusBorderView;
 
@@ -50,7 +53,7 @@ public class TvRecyclerView extends RecyclerView {
     protected View mSelectedItem;
     private OnItemStateListener mItemStateListener;
     private Scroller mScrollerFocusMoveAnim;
-    private boolean mIsFollowScroll;
+    private int mScrollMode = SCROLL_ALIGN;
 
     private int mScreenWidth;
     private int mScreenHeight;
@@ -78,6 +81,9 @@ public class TvRecyclerView extends RecyclerView {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                 if (mIsNeedMoveForSelect) {
+                    if (DEBUG) {
+                        Log.d(TAG, "onScrolled: mSelectedPosition=" + mSelectedPosition);
+                    }
                     mIsNeedMoveForSelect = false;
 
                     int firstVisiblePos = getFirstVisiblePosition();
@@ -98,7 +104,6 @@ public class TvRecyclerView extends RecyclerView {
         mSelectedPosition = 0;
         mNextFocused = null;
         mInLayout = false;
-        mIsFollowScroll = false;
         mSelectedScaleValue = DEFAULT_SELECT_SCALE;
         mIsAutoProcessFocus = true;
 
@@ -114,10 +119,7 @@ public class TvRecyclerView extends RecyclerView {
     private void setAttributeSet(AttributeSet attrs) {
         if (attrs != null) {
             TypedArray typeArray = getContext().obtainStyledAttributes(attrs, R.styleable.TvRecyclerView);
-            int type = typeArray.getInteger(R.styleable.TvRecyclerView_scrollMode, 0);
-            if (type == 1) {
-                mIsFollowScroll = true;
-            }
+            mScrollMode = typeArray.getInteger(R.styleable.TvRecyclerView_scrollMode, SCROLL_ALIGN);
 
             final Drawable drawable = typeArray.getDrawable(R.styleable.TvRecyclerView_focusDrawable);
             if (drawable != null) {
@@ -185,7 +187,7 @@ public class TvRecyclerView extends RecyclerView {
         } else if (layoutManager instanceof ModuleLayoutManager) {
             mOrientation = ((ModuleLayoutManager)layoutManager).getOrientation();
         }
-        Log.i(TAG, "setLayoutManager: ====orientation==" + mOrientation);
+        Log.i(TAG, "setLayoutManager: orientation==" + mOrientation);
         super.setLayoutManager(layoutManager);
     }
 
@@ -220,7 +222,7 @@ public class TvRecyclerView extends RecyclerView {
     }
 
     public void setScrollMode(int mode) {
-        mIsFollowScroll = mode == SCROLL_FOLLOW;
+        mScrollMode = mode;
     }
 
     /**
@@ -307,6 +309,12 @@ public class TvRecyclerView extends RecyclerView {
         super.requestChildFocus(child, focused);
         if (mIsAutoProcessFocus) {
             requestFocus();
+        } else {
+            mSelectedPosition = getChildAdapterPosition(focused);
+            mSelectedItem = focused;
+        }
+        if (DEBUG) {
+            Log.d(TAG, "requestChildFocus: SelectPos=" + mSelectedPosition);
         }
     }
 
@@ -314,6 +322,9 @@ public class TvRecyclerView extends RecyclerView {
     protected void onFinishInflate() {
         super.onFinishInflate();
         if (mIsAutoProcessFocus) {
+            if (DEBUG) {
+                Log.d(TAG, "onFinishInflate: add fly border view");
+            }
             addFlyBorderView(getContext());
         }
     }
@@ -321,6 +332,9 @@ public class TvRecyclerView extends RecyclerView {
     @Override
     protected void onFocusChanged(boolean gainFocus, int direction, Rect previouslyFocusedRect) {
         super.onFocusChanged(gainFocus, direction, previouslyFocusedRect);
+        if (DEBUG) {
+            Log.d(TAG, "onFocusChanged: gainFocus==" + gainFocus);
+        }
         if (mItemStateListener != null) {
             if (mSelectedItem == null) {
                 mSelectedItem = getChildAt(mSelectedPosition - getFirstVisiblePosition());
@@ -383,12 +397,18 @@ public class TvRecyclerView extends RecyclerView {
         selectPos = selectPos < 0 ? 0 : selectPos;
         mSelectedItem = getChildAt(selectPos);
         mInLayout = false;
+        if (DEBUG) {
+            Log.d(TAG, "onLayout: selectPos=" + selectPos + "=SelectedItem=" + mSelectedItem);
+        }
     }
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
         super.dispatchDraw(canvas);
         if (mFocusBorderView != null && mFocusBorderView.getTvRecyclerView() != null) {
+            if (DEBUG) {
+                Log.d(TAG, "dispatchDraw: Border view invalidate.");
+            }
             mFocusBorderView.invalidate();
         }
     }
@@ -413,33 +433,31 @@ public class TvRecyclerView extends RecyclerView {
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
-            int keyCode = event.getKeyCode();
-            if (mSelectedItem == null) {
-                mSelectedItem = getChildAt(mSelectedPosition);
-            }
-            try {
-                if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
-                    mNextFocused = FocusFinder.getInstance().findNextFocus(this, mSelectedItem, View.FOCUS_LEFT);
-                } else if (keyCode == KEYCODE_DPAD_RIGHT) {
-                    mNextFocused = FocusFinder.getInstance().findNextFocus(this, mSelectedItem, View.FOCUS_RIGHT);
-                } else if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
-                    mNextFocused = FocusFinder.getInstance().findNextFocus(this, mSelectedItem, View.FOCUS_UP);
-                } else if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
-                    mNextFocused = FocusFinder.getInstance().findNextFocus(this, mSelectedItem, View.FOCUS_DOWN);
-                }
-            } catch (Exception e) {
-                Log.i(TAG, "dispatchKeyEvent: get next focus item error: " + e.getMessage());
-                mNextFocused = null;
-            }
-
             if (!mIsAutoProcessFocus) {
                 processMoves(event.getKeyCode());
-                if (mNextFocused != null) {
-                    mSelectedItem = mNextFocused;
-                } else {
-                    mSelectedItem = getFocusedChild();
+            } else {
+                int keyCode = event.getKeyCode();
+                if (mSelectedItem == null) {
+                    mSelectedItem = getChildAt(mSelectedPosition);
                 }
-                mSelectedPosition = getChildAdapterPosition(mSelectedItem);
+                try {
+                    if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
+                        mNextFocused = FocusFinder.getInstance().findNextFocus(this, mSelectedItem, View.FOCUS_LEFT);
+                    } else if (keyCode == KEYCODE_DPAD_RIGHT) {
+                        mNextFocused = FocusFinder.getInstance().findNextFocus(this, mSelectedItem, View.FOCUS_RIGHT);
+                    } else if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+                        mNextFocused = FocusFinder.getInstance().findNextFocus(this, mSelectedItem, View.FOCUS_UP);
+                    } else if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                        mNextFocused = FocusFinder.getInstance().findNextFocus(this, mSelectedItem, View.FOCUS_DOWN);
+                    }
+                } catch (Exception e) {
+                    Log.i(TAG, "dispatchKeyEvent: get next focus item error: " + e.getMessage());
+                    mNextFocused = null;
+                }
+            }
+            if (DEBUG) {
+                Log.d(TAG, "dispatchKeyEvent: mNextFocused=" + mNextFocused
+                + "=nextPos=" + getChildAdapterPosition(mNextFocused));
             }
         }
         return super.dispatchKeyEvent(event);
@@ -521,18 +539,14 @@ public class TvRecyclerView extends RecyclerView {
                 return true;
             }
 
-            if (!mIsFollowScroll) {
-                boolean isVisible = isVisibleChild(mNextFocused);
-                boolean isHalfVisible = isHalfVisibleChild(mNextFocused);
-                if (isHalfVisible || !isVisible) {
-                    smoothScrollView(keycode);
-                }
-            } else {
-                boolean isOver = isOverHalfScreen(mNextFocused, keycode);
-                if (isOver) {
-                    smoothScrollView(keycode);
-                }
+            int scrollDistance = getNeedScrollDistance(mNextFocused, keycode);
+            if (DEBUG) {
+                Log.d(TAG, "processMoves: scrollDistance==" + scrollDistance);
             }
+            if (scrollDistance != 0) {
+                smoothScrollView(keycode, scrollDistance);
+            }
+
             if (mIsAutoProcessFocus) {
                 startFocusMoveAnim();
             } else {
@@ -542,8 +556,51 @@ public class TvRecyclerView extends RecyclerView {
         }
     }
 
-    private void smoothScrollView(int keycode) {
-        int scrollDistance = getScrollDistance(keycode);
+    private int getNeedScrollDistance(View focusView, int keyCode) {
+        switch (mScrollMode) {
+            case SCROLL_ALIGN:
+            default:
+                return getAlignDistance(focusView, keyCode);
+            case SCROLL_FOLLOW:
+                return getFollowDistance(focusView, keyCode);
+            case SCROLL_NORMAL:
+                return getNormalDistance(focusView, keyCode);
+        }
+    }
+
+    private int getAlignDistance(View view, int keyCode) {
+        int scrollDistance = 0;
+        boolean isVisible = isVisibleChild(view);
+        boolean isHalfVisible = isHalfVisibleChild(view);
+        if (isHalfVisible || !isVisible) {
+            scrollDistance = getScrollDistance(keyCode);
+        }
+        return scrollDistance;
+    }
+
+    private int getFollowDistance(View view, int keyCode) {
+        int scrollDistance = 0;
+        boolean isOver = isOverHalfScreen(view, keyCode);
+        if (isOver) {
+            scrollDistance = getScrollDistance(keyCode);
+        }
+        return scrollDistance;
+    }
+
+    private int getNormalDistance(View view, int keyCode) {
+        if (!mIsAutoProcessFocus) {
+            return 0;
+        }
+        int scrollDistance = 0;
+        boolean isVisible = isVisibleChild(view);
+        boolean isHalfVisible = isHalfVisibleChild(view);
+        if (isHalfVisible || !isVisible) {
+            scrollDistance = getNormalScrollDistance(view, keyCode);
+        }
+        return scrollDistance;
+    }
+
+    private void smoothScrollView(int keycode, int scrollDistance) {
         if ((keycode == KEYCODE_DPAD_RIGHT || keycode == KeyEvent.KEYCODE_DPAD_LEFT)
                 && mOrientation == HORIZONTAL) {
             smoothScrollBy(scrollDistance, 0);
@@ -551,6 +608,29 @@ public class TvRecyclerView extends RecyclerView {
                 && mOrientation == VERTICAL) {
             smoothScrollBy(0, scrollDistance);
         }
+    }
+
+    private int getNormalScrollDistance(View view, int keyCode) {
+        int distance = 0;
+        Rect ret = new Rect();
+        view.getLocalVisibleRect(ret);
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+                distance = view.getWidth() - ret.width() + NORMAL_SCROLL_COMPENSATION_VAL;
+                break;
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+                distance = -(view.getWidth() - ret.width() + NORMAL_SCROLL_COMPENSATION_VAL);
+                break;
+            case KeyEvent.KEYCODE_DPAD_UP:
+                distance = -(view.getHeight() - ret.height() + NORMAL_SCROLL_COMPENSATION_VAL);
+                break;
+            case KeyEvent.KEYCODE_DPAD_DOWN:
+                distance = view.getHeight() - ret.height() + NORMAL_SCROLL_COMPENSATION_VAL;
+                break;
+            default:
+                break;
+        }
+        return distance;
     }
 
     private int getScrollDistance(int keyCode) {

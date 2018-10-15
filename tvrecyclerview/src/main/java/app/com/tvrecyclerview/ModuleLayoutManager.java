@@ -4,17 +4,20 @@ import android.graphics.PointF;
 import android.graphics.Rect;
 import android.support.v7.widget.OrientationHelper;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
 
 import java.util.ArrayList;
 
+import static app.com.tvrecyclerview.TvRecyclerView.DEBUG;
+
 
 public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager implements
         RecyclerView.SmoothScroller.ScrollVectorProvider {
 
-    private static final String TAG = "ModuleLayoutManager";
+    private static final String TAG = "TvRecyclerView_ML";
 
     private static final int BASE_ITEM_DEFAULT_SIZE = 380;
 
@@ -68,6 +71,10 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
         } else {
             mOriItemWidth = (getWidth() - (mNumRowOrColumn - 1) * getColumnSpacing())
                              / mNumRowOrColumn;
+        }
+        if (DEBUG) {
+            Log.d(TAG, "resetItemRowColumnSize: OriItemHeight=" + mOriItemHeight
+            + "=OriItemWidth=" + mOriItemWidth);
         }
     }
 
@@ -132,6 +139,9 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
             }
             frame.set(itemRect);
             mItemsRect.put(i, frame);
+            if (DEBUG) {
+                Log.d(TAG, "fill: pos=" + i + "=frame=" + frame.toString());
+            }
         }
     }
 
@@ -296,6 +306,9 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
                 }
                 frame.set(itemRect);
                 mItemsRect.put(i, frame);
+                if (DEBUG) {
+                    Log.d(TAG, "fillRequireItems: new pos=" + i + "=frame=" + frame.toString());
+                }
             }
         }
     }
@@ -339,6 +352,9 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
     private void recycleChildren(RecyclerView.Recycler recycler, int dt,
                                  ArrayList<Integer> recycleIndexList) {
         int size = recycleIndexList.size();
+        if (DEBUG) {
+            Log.d(TAG, "recycleChildren: recycler item size=" + size);
+        }
         if (dt < 0) {
             for (int i = 0; i < size; i++) {
                 int pos = recycleIndexList.get(i);
@@ -397,6 +413,10 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
         if (mHorizontalOffset != 0) {
             recycleAndFillItems(recycler, state, dx);
         }
+        if (DEBUG) {
+            Log.d(TAG, "scrollHorizontallyBy: HorizontalOffset=" + mHorizontalOffset
+            + "=maxScrollSpace=" + maxScrollSpace);
+        }
         return realOffset;
     }
 
@@ -428,6 +448,10 @@ public abstract class ModuleLayoutManager extends RecyclerView.LayoutManager imp
         offsetChildrenVertical(-realOffset);
         if (mVerticalOffset != 0) {
             recycleAndFillItems(recycler, state, dy);
+        }
+        if (DEBUG) {
+            Log.d(TAG, "scrollVerticallyBy: VerticalOffset=" + mVerticalOffset
+                    + "=maxScrollSpace=" + maxScrollSpace);
         }
         return realOffset;
     }
