@@ -19,7 +19,8 @@ public class NormalFocusActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_normal);
-        mTvRecyclerView = (TvRecyclerView) findViewById(R.id.tv_recycler_view);
+        mTvRecyclerView = findViewById(R.id.tv_recycler_view);
+        TvRecyclerView.openDEBUG();
         init();
     }
 
@@ -45,6 +46,21 @@ public class NormalFocusActivity extends AppCompatActivity {
             public void onItemViewFocusChanged(boolean gainFocus, View view, int position) {
             }
         });
+
+        mTvRecyclerView.setOnScrollStateListener(new TvRecyclerView.onScrollStateListener() {
+            @Override
+            public void onScrollEnd(View view) {
+                Toast.makeText(NormalFocusActivity.this,
+                        "scroll at end", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onScrollStart(View view) {
+                Toast.makeText(NormalFocusActivity.this,
+                        "scroll at start", Toast.LENGTH_SHORT).show();
+            }
+        });
+
         mTvRecyclerView.setSelectPadding(35, 34, 35, 38);
     }
 
