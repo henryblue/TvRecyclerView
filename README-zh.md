@@ -91,3 +91,8 @@ dependencies {
 |setSelectPadding(int,int,int,int)| 调整焦点框的padding值, 确保焦点框包裹住item |
 
 此外: 因为TvRecyclerView继承RecyclerView, 所以你可以使用所有的RecyclerView的所有公共接口.
+
+## 其他
+当isAutoProcessFocus属性设置为true（默认为true）, 意味着焦点是由TvRecyclerView来处理， 不会交给子view， 这时需要注意子view不要将背景设为
+透明， 因为如果背景为透明， 那么根据焦点框的实现逻辑， 会发生重影的效果。
+
