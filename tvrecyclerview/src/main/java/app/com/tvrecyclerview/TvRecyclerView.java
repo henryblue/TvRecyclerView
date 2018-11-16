@@ -5,12 +5,15 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
+import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.LinearSmoothScroller;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -32,6 +35,11 @@ public class TvRecyclerView extends RecyclerView {
     private static final int SCROLL_ALIGN = 0;
     private static final int SCROLL_FOLLOW = 1;
     private static final int SCROLL_NORMAL = 2;
+
+    private final static int PREV_ITEM = 0;
+    private final static int NEXT_ITEM = 1;
+    private final static int PREV_ROW = 2;
+    private final static int NEXT_ROW = 3;
 
     private static final int DEFAULT_DIRECTION = -1;
 
@@ -56,6 +64,7 @@ public class TvRecyclerView extends RecyclerView {
     private OnItemStateListener mItemStateListener;
     private onScrollStateListener mScrollListener;
     private Scroller mScrollerFocusMoveAnim;
+    private PendingMoveSmoothScroller mPendingMoveSmoothScroller;
     private int mScrollMode = SCROLL_ALIGN;
 
     private boolean mIsAutoProcessFocus;
@@ -63,6 +72,7 @@ public class TvRecyclerView extends RecyclerView {
     private int mDirection;
     private boolean mIsSetItemSelected = false;
     private boolean mIsNeedMoveForSelect = false;
+    private int mNumRows = 1;
 
 
     public TvRecyclerView(Context context) {
@@ -186,8 +196,13 @@ public class TvRecyclerView extends RecyclerView {
 
     @Override
     public void setLayoutManager(LayoutManager layoutManager) {
-        if (layoutManager instanceof LinearLayoutManager) {
+        if (layoutManager instanceof GridLayoutManager) {
+            GridLayoutManager manager = (GridLayoutManager) layoutManager;
+            mOrientation = manager.getOrientation();
+            mNumRows = manager.getSpanCount();
+        } else if (layoutManager instanceof LinearLayoutManager) {
             mOrientation = ((LinearLayoutManager)layoutManager).getOrientation();
+            mNumRows = 1;
         } else if (layoutManager instanceof ModuleLayoutManager) {
             mOrientation = ((ModuleLayoutManager)layoutManager).getOrientation();
         }
@@ -483,6 +498,47 @@ public class TvRecyclerView extends RecyclerView {
         return super.dispatchKeyEvent(event);
     }
 
+    private boolean isFindNextFocusView(int keyCode) {
+        if (!mIsAutoProcessFocus) {
+            return false;
+        }
+        int movement = getMovement(keyCode);
+        if (movement == NEXT_ITEM) {
+            if (!hasCreatedLastItem()) {
+                processPendingMovement(true);
+                return true;
+            }
+        } else if (movement == PREV_ITEM) {
+            if (!hasCreatedFirstItem()) {
+                processPendingMovement(false);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void processPendingMovement(boolean forward) {
+        if (forward ? hasCreatedLastItem() : hasCreatedFirstItem()) {
+            return;
+        }
+        if (mPendingMoveSmoothScroller == null) {
+            // Stop existing scroller and create a new PendingMoveSmoothScroller.
+            stopScroll();
+            PendingMoveSmoothScroller linearSmoothScroller = new PendingMoveSmoothScroller(
+                    getContext(), forward ? 1 : -1);
+            getLayoutManager().startSmoothScroll(linearSmoothScroller);
+            if (linearSmoothScroller.isRunning()) {
+                mPendingMoveSmoothScroller = linearSmoothScroller;
+            }
+        } else {
+            if (forward) {
+                mPendingMoveSmoothScroller.increasePendingMoves();
+            } else {
+                mPendingMoveSmoothScroller.decreasePendingMoves();
+            }
+        }
+    }
+
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         switch (keyCode) {
@@ -553,30 +609,35 @@ public class TvRecyclerView extends RecyclerView {
     }
 
     private boolean processMoves(int keyCode) {
-        if (mNextFocused == null || !hasFocus()) {
+        if (mNextFocused == null) {
+            if (isFindNextFocusView(keyCode)) {
+                return true;
+            } else if (mIsAutoProcessFocus) {
+                notifyScrollState(keyCode);
+            }
             if (DEBUG) {
                 Log.d(TAG, "processMoves: error");
-            }
-            if (mIsAutoProcessFocus) {
-                notifyScrollState(keyCode);
             }
             return false;
         } else {
             if (mIsDrawFocusMoveAnim) {
                 return true;
             }
-
-            int scrollDistance = getNeedScrollDistance(mNextFocused);
-            if (DEBUG) {
-                Log.d(TAG, "processMoves: scrollDistance==" + scrollDistance);
-            }
-            if (scrollDistance != 0) {
-                smoothScrollView(scrollDistance);
-            }
-
-            startFocusMoveAnim();
+            scrollToView(mNextFocused);
             return true;
         }
+    }
+
+    private void scrollToView(View view) {
+        int scrollDistance = getNeedScrollDistance(view);
+        if (DEBUG) {
+            Log.d(TAG, "scrollToView: scrollDistance==" + scrollDistance);
+        }
+        if (scrollDistance != 0) {
+            smoothScrollView(scrollDistance);
+        }
+
+        startFocusMoveAnim();
     }
 
     private void notifyScrollState(int keyCode) {
@@ -732,6 +793,54 @@ public class TvRecyclerView extends RecyclerView {
         }
     }
 
+    private boolean hasCreatedLastItem() {
+        int count = getLayoutManager().getItemCount();
+        return count == 0 || findViewHolderForAdapterPosition(count - 1) != null;
+    }
+
+    private boolean hasCreatedFirstItem() {
+        int count = getLayoutManager().getItemCount();
+        return count == 0 || findViewHolderForAdapterPosition(0) != null;
+    }
+
+    private int getMovement(int keyCode) {
+        int movement = View.FOCUS_LEFT;
+
+        if (mOrientation == HORIZONTAL) {
+            switch(keyCode) {
+                case KeyEvent.KEYCODE_DPAD_LEFT:
+                    movement = PREV_ITEM;
+                    break;
+                case KeyEvent.KEYCODE_DPAD_RIGHT:
+                    movement = NEXT_ITEM;
+                    break;
+                case KeyEvent.KEYCODE_DPAD_UP:
+                    movement = PREV_ROW;
+                    break;
+                case KeyEvent.KEYCODE_DPAD_DOWN:
+                    movement = NEXT_ROW;
+                    break;
+            }
+        } else if (mOrientation == VERTICAL) {
+            switch(keyCode) {
+                case KeyEvent.KEYCODE_DPAD_LEFT:
+                    movement = PREV_ROW;
+                    break;
+                case KeyEvent.KEYCODE_DPAD_RIGHT:
+                    movement = NEXT_ROW;
+                    break;
+                case KeyEvent.KEYCODE_DPAD_UP:
+                    movement = PREV_ITEM;
+                    break;
+                case KeyEvent.KEYCODE_DPAD_DOWN:
+                    movement = NEXT_ITEM;
+                    break;
+            }
+        }
+
+        return movement;
+    }
+
     private boolean isHalfVisibleChild(View child) {
         if (child != null) {
             Rect ret = new Rect();
@@ -819,6 +928,87 @@ public class TvRecyclerView extends RecyclerView {
                     mFocusFrameRight, mFocusFrameBottom);
         }
     }
+
+
+    /**
+     * The SmoothScroller that remembers pending DPAD keys and consume pending keys
+     * during scroll.
+     */
+    private final class PendingMoveSmoothScroller extends LinearSmoothScroller {
+        private int mPendingMoves;
+        private int mMaxPendingMoves = 10;
+
+        PendingMoveSmoothScroller(Context context, int initialPendingMoves) {
+            super(context);
+            mPendingMoves = initialPendingMoves;
+            int targetPos = mSelectedPosition;
+            if (mPendingMoves > 0) {
+                targetPos += mNumRows;
+            } else {
+                targetPos -= mNumRows;
+            }
+            setTargetPosition(targetPos);
+        }
+
+        void increasePendingMoves() {
+            if (mPendingMoves < mMaxPendingMoves) {
+                mPendingMoves++;
+            }
+        }
+
+        void decreasePendingMoves() {
+            if (mPendingMoves > -mMaxPendingMoves) {
+                mPendingMoves--;
+            }
+        }
+
+        @Override
+        protected void updateActionForInterimTarget(SmoothScroller.Action action) {
+            if (mPendingMoves == 0) {
+                return;
+            }
+            super.updateActionForInterimTarget(action);
+        }
+
+        @Override
+        public PointF computeScrollVectorForPosition(int targetPosition) {
+            if (mPendingMoves == 0) {
+                return null;
+            }
+            int direction = mPendingMoves < 0 ? -1 : 1;
+            if (mOrientation == HORIZONTAL) {
+                return new PointF(direction, 0);
+            } else {
+                return new PointF(0, direction);
+            }
+        }
+
+        @Override
+        protected void onStop() {
+            // if we hit wall, need clear the remaining pending moves.
+            mPendingMoves = 0;
+            mPendingMoveSmoothScroller = null;
+            int targetPosition = getTargetPosition();
+            View targetView = findViewByPosition(targetPosition);
+            Log.i(TAG, "PendingMoveSmoothScroller onStop: targetPos=" + targetPosition
+            + "==targetView=" + targetView);
+            if (targetView == null) {
+                super.onStop();
+                return;
+            }
+            if (mSelectedPosition != targetPosition) {
+                mSelectedPosition = targetPosition;
+            }
+            if (!mIsAutoProcessFocus) {
+                targetView.requestFocus();
+            } else {
+                mNextFocused = targetView;
+                scrollToView(targetView);
+            }
+            super.onStop();
+        }
+    }
+
 
     public interface OnItemStateListener {
         void onItemViewClick(View view, int position);
