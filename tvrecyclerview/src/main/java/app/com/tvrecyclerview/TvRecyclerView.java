@@ -944,8 +944,15 @@ public class TvRecyclerView extends RecyclerView {
             int targetPos = mSelectedPosition;
             if (mPendingMoves > 0) {
                 targetPos += mNumRows;
+                int maxPos = getAdapter().getItemCount() - 1;
+                if (targetPos > maxPos) {
+                    targetPos = maxPos;
+                }
             } else {
                 targetPos -= mNumRows;
+                if (targetPos < 0) {
+                    targetPos = 0;
+                }
             }
             setTargetPosition(targetPos);
         }
