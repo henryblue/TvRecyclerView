@@ -71,8 +71,8 @@ public class TvRecyclerView extends RecyclerView {
     private int mOrientation;
     private int mDirection;
     private boolean mIsSetItemSelected = false;
-    private boolean mIsNeedMoveForSelect = false;
     private int mNumRows = 1;
+    private boolean mIsNeedMoved = false;
 
 
     public TvRecyclerView(Context context) {
@@ -92,17 +92,23 @@ public class TvRecyclerView extends RecyclerView {
         addOnScrollListener(new OnScrollListener() {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-                if (mIsNeedMoveForSelect) {
+                if (mIsSetItemSelected) {
                     if (DEBUG) {
                         Log.d(TAG, "onScrolled: mSelectedPosition=" + mSelectedPosition);
                     }
-                    mIsNeedMoveForSelect = false;
-
+                    mIsSetItemSelected = false;
                     int firstVisiblePos = getFirstVisiblePosition();
-                    View selectView = getChildAt(mSelectedPosition - firstVisiblePos);
-                    if (selectView != null) {
-                        mSelectedItem = selectView;
-                        adjustSelectOffset(selectView);
+                    mNextFocused = getChildAt(mSelectedPosition - firstVisiblePos);
+                    if (mNextFocused != null) {
+                        if (DEBUG) {
+                            Log.d(TAG, "onScrolled: start adjust scroll distance");
+                        }
+                        if (mIsAutoProcessFocus) {
+                            scrollToViewToCenter(mNextFocused);
+                        } else {
+                            mIsNeedMoved = true;
+                            mNextFocused.requestFocus();
+                        }
                     }
                 }
             }
@@ -262,55 +268,26 @@ public class TvRecyclerView extends RecyclerView {
         if (mSelectedPosition == position) {
             return;
         }
-
-        mIsSetItemSelected = true;
         if (position >= getAdapter().getItemCount()) {
             position = getAdapter().getItemCount() - 1;
         }
-        mSelectedPosition = position;
-        requestLayout();
-    }
-
-    /**
-     * the selected item, there are two cases:
-     * 1. item is displayed on the screen
-     * 2. item is not displayed on the screen
-     */
-    private void adjustSelectMode() {
-        int childCount = getChildCount();
-        if (mSelectedPosition < childCount) {
-            mSelectedItem = getChildAt(mSelectedPosition);
-            adjustSelectOffset(mSelectedItem);
-        } else {
-            mIsNeedMoveForSelect = true;
-            scrollToPosition(mSelectedPosition);
+        int firstPos = getChildAdapterPosition(getChildAt(0));
+        int lastPos = getChildAdapterPosition(getChildAt(getChildCount() - 1));
+        if (DEBUG) {
+            Log.d(TAG, "setItemSelected: first=" + firstPos + "=last=" + lastPos
+                    + "=pos=" + position);
         }
-    }
-
-    /**
-     * adjust the selected item position to half screen location
-     */
-    private void adjustSelectOffset(View selectView) {
-        if (mIsAutoProcessFocus) {
-            scrollOffset(selectView);
+        if (position >= firstPos && position <= lastPos) {
+            mNextFocused = getChildAt(position - firstPos);
+            if (mIsAutoProcessFocus && !mIsDrawFocusMoveAnim) {
+                scrollToView(mNextFocused);
+            } else {
+                mNextFocused.requestFocus();
+            }
         } else {
-            scrollOffset(selectView);
-            selectView.requestFocus();
-        }
-        if (mItemStateListener != null) {
-            mItemStateListener.onItemViewFocusChanged(true, selectView,
-                    mSelectedPosition);
-        }
-    }
-
-    private void scrollOffset(View selectView) {
-        int dx;
-        if (mOrientation == HORIZONTAL) {
-            dx = selectView.getLeft() + selectView.getWidth() / 2 - getClientSize() / 2;
-            scrollBy(dx, 0);
-        } else {
-            dx = selectView.getTop() + selectView.getHeight() / 2 - getClientSize() / 2;
-            scrollBy(0, dx);
+            mIsSetItemSelected = true;
+            mSelectedPosition = position;
+            scrollToPosition(position);
         }
     }
 
@@ -340,10 +317,14 @@ public class TvRecyclerView extends RecyclerView {
             requestFocus();
         } else {
             int position = getChildAdapterPosition(focused);
-            if (mSelectedPosition != position) {
+            if ((mSelectedPosition != position || mIsNeedMoved) && !mIsSetItemSelected) {
                 mSelectedPosition = position;
                 mSelectedItem = focused;
                 int distance = getNeedScrollDistance(focused);
+                if (mIsNeedMoved && mScrollMode != SCROLL_FOLLOW) {
+                    distance = getFollowDistance(focused);
+                }
+                mIsNeedMoved = false;
                 if (distance != 0) {
                     if (DEBUG) {
                         Log.d(TAG, "requestChildFocus: scroll distance=" + distance);
@@ -422,10 +403,6 @@ public class TvRecyclerView extends RecyclerView {
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         mInLayout = true;
         super.onLayout(changed, l, t, r, b);
-        if (mIsSetItemSelected) {
-            adjustSelectMode();
-            mIsSetItemSelected = false;
-        }
 
         // fix issue: when start anim the FocusView location error in AutoProcessFocus mode
         Adapter adapter = getAdapter();
@@ -626,6 +603,18 @@ public class TvRecyclerView extends RecyclerView {
             scrollToView(mNextFocused);
             return true;
         }
+    }
+
+    private void scrollToViewToCenter(View view) {
+        int scrollDistance = getFollowDistance(view);
+        if (DEBUG) {
+            Log.d(TAG, "scrollToViewToCenter: scrollDistance==" + scrollDistance);
+        }
+        if (scrollDistance != 0) {
+            smoothScrollView(scrollDistance);
+        }
+
+        startFocusMoveAnim();
     }
 
     private void scrollToView(View view) {
