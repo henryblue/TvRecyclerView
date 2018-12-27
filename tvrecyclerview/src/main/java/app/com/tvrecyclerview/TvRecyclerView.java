@@ -73,6 +73,7 @@ public class TvRecyclerView extends RecyclerView {
     private boolean mIsSetItemSelected = false;
     private int mNumRows = 1;
     private boolean mIsNeedMoved = false;
+    int mLayerType = View.LAYER_TYPE_SOFTWARE;
 
 
     public TvRecyclerView(Context context) {
@@ -280,7 +281,7 @@ public class TvRecyclerView extends RecyclerView {
         if (position >= firstPos && position <= lastPos) {
             mNextFocused = getChildAt(position - firstPos);
             if (mIsAutoProcessFocus && !mIsDrawFocusMoveAnim) {
-                scrollToView(mNextFocused);
+                scrollToView(mNextFocused, true);
             } else {
                 mNextFocused.requestFocus();
             }
@@ -345,6 +346,7 @@ public class TvRecyclerView extends RecyclerView {
             if (DEBUG) {
                 Log.d(TAG, "onFinishInflate: add fly border view");
             }
+            mLayerType = getLayerType();
             addFlyBorderView(getContext());
         }
     }
@@ -380,7 +382,7 @@ public class TvRecyclerView extends RecyclerView {
             }
         }
         if (!gainFocus) {
-            mFocusBorderView.dismissFocus();
+            mFocusBorderView.dismissGetFocus();
         }
     }
 
@@ -467,10 +469,10 @@ public class TvRecyclerView extends RecyclerView {
                 Log.e(TAG, "dispatchKeyEvent: get next focus item error: " + e.getMessage());
                 mNextFocused = null;
             }
-        }
-        if (DEBUG) {
-            Log.d(TAG, "dispatchKeyEvent: mNextFocused=" + mNextFocused +
-                    "=nextPos=" + getChildAdapterPosition(mNextFocused));
+            if (DEBUG) {
+                Log.d(TAG, "dispatchKeyEvent: mNextFocused=" + mNextFocused +
+                        "=nextPos=" + getChildAdapterPosition(mNextFocused));
+            }
         }
         return super.dispatchKeyEvent(event);
     }
@@ -570,12 +572,9 @@ public class TvRecyclerView extends RecyclerView {
             postInvalidate();
         } else {
             if (mIsDrawFocusMoveAnim) {
-                if (mNextFocused != null) {
-                    mSelectedItem = mNextFocused;
-                    mSelectedPosition = getChildAdapterPosition(mSelectedItem);
-                }
                 mIsDrawFocusMoveAnim = false;
-                setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+                updateSelectPositionInLayout(mNextFocused);
+                setLayerType(mLayerType, null);
                 postInvalidate();
                 if (mItemStateListener != null) {
                     mItemStateListener.onItemViewFocusChanged(true, mSelectedItem,
@@ -585,12 +584,21 @@ public class TvRecyclerView extends RecyclerView {
         }
     }
 
+    private void updateSelectPositionInLayout(View nextView) {
+        if (nextView != null) {
+            mSelectedItem = nextView;
+            mSelectedPosition = getChildAdapterPosition(mSelectedItem);
+        }
+    }
+
     private boolean processMoves(int keyCode) {
         if (mNextFocused == null) {
+            // fix issue: When the childView just fills the display area, it can't slide
             if (isFindNextFocusView(keyCode)) {
                 return true;
-            } else if (mIsAutoProcessFocus) {
+            } else if (mIsAutoProcessFocus) { // scroll start or end
                 notifyScrollState(keyCode);
+                mIsDrawFocusMoveAnim = false;
             }
             if (DEBUG) {
                 Log.d(TAG, "processMoves: error");
@@ -598,9 +606,9 @@ public class TvRecyclerView extends RecyclerView {
             return false;
         } else {
             if (mIsDrawFocusMoveAnim) {
-                return true;
+                updateSelectPositionInLayout(mNextFocused);
             }
-            scrollToView(mNextFocused);
+            scrollToView(mNextFocused, true);
             return true;
         }
     }
@@ -617,15 +625,18 @@ public class TvRecyclerView extends RecyclerView {
         startFocusMoveAnim();
     }
 
-    private void scrollToView(View view) {
+    private void scrollToView(View view, boolean smooth) {
         int scrollDistance = getNeedScrollDistance(view);
         if (DEBUG) {
             Log.d(TAG, "scrollToView: scrollDistance==" + scrollDistance);
         }
         if (scrollDistance != 0) {
-            smoothScrollView(scrollDistance);
+            if (smooth) {
+                smoothScrollView(scrollDistance);
+            } else {
+                scrollToView(scrollDistance);
+            }
         }
-
         startFocusMoveAnim();
     }
 
@@ -726,6 +737,14 @@ public class TvRecyclerView extends RecyclerView {
             smoothScrollBy(scrollDistance, 0);
         } else {
             smoothScrollBy(0, scrollDistance);
+        }
+    }
+
+    private void scrollToView(int scrollDistance) {
+        if (mOrientation == HORIZONTAL) {
+            scrollBy(scrollDistance, 0);
+        } else {
+            scrollBy(0, scrollDistance);
         }
     }
 
@@ -868,6 +887,8 @@ public class TvRecyclerView extends RecyclerView {
     }
 
     private void startFocusMoveAnim() {
+        mScrollerFocusMoveAnim.abortAnimation();
+        mFocusBorderView.dismissDraw();
         setLayerType(View.LAYER_TYPE_NONE, null);
         mIsDrawFocusMoveAnim = true;
         if (mItemStateListener != null) {
@@ -999,7 +1020,7 @@ public class TvRecyclerView extends RecyclerView {
                 targetView.requestFocus();
             } else {
                 mNextFocused = targetView;
-                scrollToView(targetView);
+                scrollToView(targetView, true);
             }
             super.onStop();
         }

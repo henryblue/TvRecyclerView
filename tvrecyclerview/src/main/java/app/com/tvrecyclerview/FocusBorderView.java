@@ -21,7 +21,6 @@ public class FocusBorderView extends View {
     private float mScaleY;
 
     private boolean mIsDrawGetFocusAnim;
-    private boolean mIsNeedLayerTypeToSoftWare;
     private boolean mIsClicked;
 
     private int mLeftFocusBoundWidth;
@@ -42,7 +41,6 @@ public class FocusBorderView extends View {
         mBottomFocusBoundWidth = 0;
         mScaleX = 0;
         mScaleY = 0;
-        mIsNeedLayerTypeToSoftWare = true;
     }
 
     public TvRecyclerView getTvRecyclerView() {
@@ -52,7 +50,6 @@ public class FocusBorderView extends View {
     public void setTvRecyclerView(TvRecyclerView tvRecyclerView) {
         if (mTvRecyclerView == null) {
             mTvRecyclerView = tvRecyclerView;
-            mIsNeedLayerTypeToSoftWare = mTvRecyclerView.getLayerType() == View.LAYER_TYPE_SOFTWARE;
         }
     }
 
@@ -79,8 +76,12 @@ public class FocusBorderView extends View {
         }
     }
 
-    public void dismissFocus() {
+    public void dismissGetFocus() {
         mIsDrawGetFocusAnim = false;
+    }
+
+    public void dismissDraw() {
+        mScroller.abortAnimation();
     }
 
     public void startClickAnim() {
@@ -120,15 +121,13 @@ public class FocusBorderView extends View {
             if (mIsDrawGetFocusAnim) {
                 mIsDrawGetFocusAnim = false;
                 if (mTvRecyclerView != null) {
-                    mTvRecyclerView.setLayerType(mIsNeedLayerTypeToSoftWare ?
-                            View.LAYER_TYPE_SOFTWARE : View.LAYER_TYPE_NONE, null);
+                    mTvRecyclerView.setLayerType(mTvRecyclerView.mLayerType, null);
                     invalidate();
                 }
             } else if (mIsClicked) {
                 mIsClicked = false;
                 if (mTvRecyclerView != null) {
-                    mTvRecyclerView.setLayerType(mIsNeedLayerTypeToSoftWare ?
-                            View.LAYER_TYPE_SOFTWARE : View.LAYER_TYPE_NONE, null);
+                    mTvRecyclerView.setLayerType(mTvRecyclerView.mLayerType, null);
                     invalidate();
                 }
             }
