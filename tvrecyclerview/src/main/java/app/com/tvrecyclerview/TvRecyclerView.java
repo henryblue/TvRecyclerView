@@ -888,15 +888,19 @@ public class TvRecyclerView extends RecyclerView {
 
     private void startFocusMoveAnim() {
         mScrollerFocusMoveAnim.abortAnimation();
-        mFocusBorderView.dismissDraw();
-        setLayerType(View.LAYER_TYPE_NONE, null);
-        mIsDrawFocusMoveAnim = true;
-        if (mItemStateListener != null) {
-            mItemStateListener.onItemViewFocusChanged(false, mSelectedItem,
-                    mSelectedPosition);
+        if (mFocusBorderView != null) {
+            mFocusBorderView.dismissDraw();
+            setLayerType(View.LAYER_TYPE_NONE, null);
+            mIsDrawFocusMoveAnim = true;
+            if (mItemStateListener != null) {
+                mItemStateListener.onItemViewFocusChanged(false, mSelectedItem,
+                        mSelectedPosition);
+            }
+            mScrollerFocusMoveAnim.startScroll(0, 0, 100, 100, 200);
+            invalidate();
+        } else {
+            Log.d(TAG, "startFocusMoveAnim: mFocusBorderView is null");
         }
-        mScrollerFocusMoveAnim.startScroll(0, 0, 100, 100, 200);
-        invalidate();
     }
 
     /**
