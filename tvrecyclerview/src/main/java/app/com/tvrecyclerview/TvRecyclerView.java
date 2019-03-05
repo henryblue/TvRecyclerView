@@ -310,14 +310,14 @@ public class TvRecyclerView extends RecyclerView {
      */
     @Override
     public void requestChildFocus(View child, View focused) {
-        if (mSelectedPosition < 0) {
-            mSelectedPosition = getChildAdapterPosition(focused);
-        }
         super.requestChildFocus(child, focused);
+        if (mSelectedPosition < 0) {
+            mSelectedPosition = getAdapterPositionByView(child);
+        }
         if (mIsAutoProcessFocus) {
             requestFocus();
         } else {
-            int position = getChildAdapterPosition(focused);
+            int position = getAdapterPositionByView(focused);
             if ((mSelectedPosition != position || mIsNeedMoved) && !mIsSetItemSelected) {
                 mSelectedPosition = position;
                 mSelectedItem = focused;
@@ -339,6 +339,18 @@ public class TvRecyclerView extends RecyclerView {
         }
     }
 
+    private int getAdapterPositionByView(View view) {
+        if (view == null) {
+            return NO_POSITION;
+        }
+        LayoutParams params = (LayoutParams) view.getLayoutParams();
+        if (params == null || params.isItemRemoved()) {
+            // when item is removed, the position value can be any value.
+            return NO_POSITION;
+        }
+        return params.getViewAdapterPosition();
+    }
+    
     @Override
     protected void onFinishInflate() {
         super.onFinishInflate();
