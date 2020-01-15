@@ -15,14 +15,14 @@
             android:layout_width="200dp"
             android:layout_height="80dp"
             android:textAllCaps="false"
-            android:text="normal focus"/>
+            android:text="view shape is regular"/>
 
         <Button
             android:id="@+id/btn_module"
             android:layout_width="200dp"
             android:layout_height="80dp"
             android:textAllCaps="false"
-            android:text="module focus - horizontal"/>
+            android:text="view shape is irregular"/>
 
         <Button
             android:id="@+id/btn_module_vertical"
@@ -31,26 +31,6 @@
             android:textAllCaps="false"
             android:text="module focus - vertical"/>
 
-        <Button
-            android:id="@+id/btn_auto_focus"
-            android:layout_width="200dp"
-            android:layout_height="80dp"
-            android:textAllCaps="false"
-            android:text="auto process focus"/>
-
-        <Button
-            android:id="@+id/btn_maul_focus"
-            android:layout_width="200dp"
-            android:layout_height="80dp"
-            android:textAllCaps="false"
-            android:text="no focus - horizontal"/>
-
-        <Button
-            android:id="@+id/btn_maul_vertical_focus"
-            android:layout_width="200dp"
-            android:layout_height="80dp"
-            android:textAllCaps="false"
-            android:text="no focus - vertical"/>
     </LinearLayout>
 
 </RelativeLayout>

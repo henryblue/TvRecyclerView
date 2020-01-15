@@ -15,12 +15,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".NormalFocusActivity" />
-        <activity android:name=".ModuleFocusActivity" />
-        <activity android:name=".ModuleFocusVerticalActivity" />
-        <activity android:name=".AutoCarouselActivity" />
-        <activity android:name=".maulCarouselActivity" />
-        <activity android:name=".maulVerticalCarouselActivity" />
+
+        <activity android:name=".reuglar.RegularActivity" />
     </application>
 
 </manifest>

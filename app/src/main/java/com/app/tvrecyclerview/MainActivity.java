@@ -6,6 +6,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
 
+import com.app.tvrecyclerview.reuglar.RegularActivity;
+
 public class MainActivity extends AppCompatActivity {
 
     @Override
@@ -13,57 +15,26 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Button btnNormal = (Button) findViewById(R.id.btn_normal);
+        Button btnNormal = findViewById(R.id.btn_normal);
         btnNormal.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, NormalFocusActivity.class);
+                Intent intent = new Intent(MainActivity.this, RegularActivity.class);
                 startActivity(intent);
             }
         });
 
-        Button btnModule = (Button) findViewById(R.id.btn_module);
+        Button btnModule = findViewById(R.id.btn_module);
         btnModule.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, ModuleFocusActivity.class);
-                startActivity(intent);
             }
         });
 
-        Button btnModuleV = (Button) findViewById(R.id.btn_module_vertical);
+        Button btnModuleV = findViewById(R.id.btn_module_vertical);
         btnModuleV.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, ModuleFocusVerticalActivity.class);
-                startActivity(intent);
-            }
-        });
-
-        Button btnAuto = (Button) findViewById(R.id.btn_auto_focus);
-        btnAuto.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, AutoCarouselActivity.class);
-                startActivity(intent);
-            }
-        });
-
-        Button btnMaulHorizontal = (Button) findViewById(R.id.btn_maul_focus);
-        btnMaulHorizontal.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, maulCarouselActivity.class);
-                startActivity(intent);
-            }
-        });
-
-        Button btnMaulVertical = (Button) findViewById(R.id.btn_maul_vertical_focus);
-        btnMaulVertical.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, maulVerticalCarouselActivity.class);
-                startActivity(intent);
             }
         });
     }

@@ -7,11 +7,12 @@
         <enum name="normalScroll" value="2" />
     </attr>
 
-    <declare-styleable name="TvRecyclerView">
-        <attr name="scrollMode"/>
-        <attr name="focusDrawable" format="reference" />
-        <attr name="isAutoProcessFocus" format="boolean" />
-        <attr name="focusScale" format="float" />
+    <declare-styleable name="BaseGridView">
+        <attr name="numberOfRows" format="integer" />
+        <attr name="numberOfColumns" format="integer" />
+        <attr name="rowHeight" format="reference|integer" />
+        <attr name="columnWidth" format="reference|integer" />
+        <attr name="android:gravity"/>
     </declare-styleable>
 
 </resources>
