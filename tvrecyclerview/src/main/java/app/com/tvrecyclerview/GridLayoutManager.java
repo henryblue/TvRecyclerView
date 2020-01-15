@@ -232,11 +232,16 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
     }
 
     private int calculateMeasureHeight() {
-        int rowNum = mAdapter.getItemTopIndex(getItemCount() - 1) +
-                mAdapter.getItemRowSize(getItemCount() - 1);
-        int height = (int) (rowNum * mOriItemHeight +
-                (mAdapter.getRowSpacing() * (rowNum - 1)) +
-                getPaddingTop() + getPaddingBottom() + rowNum * mExtraChildHeight);
+        int height = 0;
+        if (mAdapter.getMaxRowOrColumn() > 0) {
+            int rowNum = mAdapter.getItemTopIndex(getItemCount() - 1) +
+                    mAdapter.getItemRowSize(getItemCount() - 1);
+            height = (int) (rowNum * mOriItemHeight +
+                    (mAdapter.getRowSpacing() * (rowNum - 1)) +
+                    getPaddingTop() + getPaddingBottom() + rowNum * mExtraChildHeight);
+        } else {
+           // mNumRowOrColumn
+        }
         if (DEBUG) {
             Log.i(TAG, "calculateMeasureHeight: height==" + height);
         }
