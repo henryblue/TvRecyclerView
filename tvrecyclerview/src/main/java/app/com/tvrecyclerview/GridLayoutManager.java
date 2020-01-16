@@ -14,13 +14,14 @@ import android.view.ViewGroup;
 import java.util.ArrayList;
 import java.util.Locale;
 
+import static android.support.v7.widget.RecyclerView.HORIZONTAL;
 
 
 final class GridLayoutManager extends RecyclerView.LayoutManager {
 
     private static final String TAG = "GridLayoutManager";
 
-    private static final boolean DEBUG = false;
+    private static final boolean DEBUG = true;
 
     private static final int BASE_ITEM_DEFAULT_SIZE = 220;
 
@@ -33,7 +34,6 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
     private final static int LAYOUT_END = 1;
     private static final int NO_POSITION = -1;
     private static final int NO_ID = -1;
-    private static final int DEFAULT_DIRECTION = -1;
 
     private GridObjectAdapter mAdapter;
 
@@ -144,8 +144,6 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
 
     private boolean mScrollEnabled = true;
 
-    private int mDirection = DEFAULT_DIRECTION;
-
     private OnChildSelectedListener mChildSelectedListener = null;
 
     private ArrayList<OnChildViewHolderSelectedListener> mChildViewHolderSelectedListeners = null;
@@ -170,7 +168,7 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
      * more than the width and height of the parent view.
      */
     private void initItemRowColumnSize(int width) {
-        int maxRowOrColumn = mAdapter.getMaxRowOrColumn();
+        int maxRowOrColumn = mAdapter.getColumns();
         if (maxRowOrColumn > 0) {
             mOriItemWidth = (width - (maxRowOrColumn - 1) * mAdapter.getColumnSpacing()
                     - getPaddingLeft() - getPaddingRight()) / maxRowOrColumn;
@@ -209,38 +207,63 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
     private int chooseMeasureSize(int spec, int desired, int min, boolean isWidthSpec) {
         final int mode = View.MeasureSpec.getMode(spec);
         final int size = View.MeasureSpec.getSize(spec);
+        int space = Math.max(desired, min);
         switch (mode) {
             case View.MeasureSpec.EXACTLY:
                 return size;
             case View.MeasureSpec.AT_MOST:
                 if ((isWidthSpec && mOrientation == HORIZONTAL) ||
-                        (!isWidthSpec && mOrientation == VERTICAL) ||
-                        (isWidthSpec && mOrientation == VERTICAL)) {
+                        (!isWidthSpec && mOrientation == VERTICAL)){
                     return size;
-                } if (!isWidthSpec && mOrientation == HORIZONTAL) {
-                return calculateMeasureHeight();
-            }
-                return Math.min(size, Math.max(desired, min));
+                } else if (!isWidthSpec && mOrientation == HORIZONTAL) {
+                    return calculateMeasureHeight(space);
+                } else if (isWidthSpec && mOrientation == VERTICAL) {
+                    return calculateMeasureWidth(size, space);
+                }
+                return Math.min(size, space);
             case View.MeasureSpec.UNSPECIFIED:
             default:
                 if (!isWidthSpec) {
-                    return calculateMeasureHeight();
+                    return calculateMeasureHeight(space);
                 } else {
-                    return Math.max(desired, min);
+                    return space;
                 }
         }
     }
 
-    private int calculateMeasureHeight() {
-        int height = 0;
-        if (mAdapter.getMaxRowOrColumn() > 0) {
+    private int calculateMeasureWidth(int size, int space) {
+        int width = size;
+        if (mAdapter.getColumns() <= 0) {
+            View view = findViewByPosition(0);
+            if (view != null) {
+                measureChild(view);
+                width = mNumRowOrColumn * view.getMeasuredWidth() + space
+                        + (mDecorInsets.left + mDecorInsets.right) * (mNumRowOrColumn - 1)
+                        + getPaddingLeft() + getPaddingRight();
+            }
+        }
+        if (DEBUG) {
+            Log.i(TAG, "calculateMeasureWidth: width==" + width);
+        }
+        return width;
+    }
+
+    private int calculateMeasureHeight(int space) {
+        int height = space;
+        if (mAdapter.getColumns() > 0) {
             int rowNum = mAdapter.getItemTopIndex(getItemCount() - 1) +
                     mAdapter.getItemRowSize(getItemCount() - 1);
             height = (int) (rowNum * mOriItemHeight +
                     (mAdapter.getRowSpacing() * (rowNum - 1)) +
                     getPaddingTop() + getPaddingBottom() + rowNum * mExtraChildHeight);
         } else {
-           // mNumRowOrColumn
+            View view = findViewByPosition(0);
+            if (view != null) {
+                measureChild(view);
+                height = mNumRowOrColumn * view.getMeasuredHeight() + space
+                        + (mDecorInsets.top + mDecorInsets.bottom) * (mNumRowOrColumn - 1)
+                + getPaddingTop() + getPaddingBottom();
+            }
         }
         if (DEBUG) {
             Log.i(TAG, "calculateMeasureHeight: height==" + height);
@@ -276,7 +299,6 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
         }
 
         mInLayout = true;
-        mDirection = DEFAULT_DIRECTION;
         mExtraChildHeight = getChildExtraHeight();
         if (DEBUG) {
             Log.d(TAG, "layoutChildren: extra child height=" + mExtraChildHeight);
@@ -305,13 +327,15 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
      * @return extra height
      */
     private int getChildExtraHeight() {
-        View view = getChildAt(0);
-        if (view != null) {
-            int itemHeight = getItemHeight(0);
-            measureChild(view, getItemWidth(0), itemHeight);
-            int viewMeasuredHeight = view.getMeasuredHeight();
-            if (viewMeasuredHeight > itemHeight) {
-                return viewMeasuredHeight - itemHeight;
+        if (mAdapter.getColumns() > 0) {
+            View view = getChildAt(0);
+            if (view != null) {
+                int itemHeight = getItemHeight(0);
+                measureChild(view, getItemWidth(0), itemHeight);
+                int viewMeasuredHeight = view.getMeasuredHeight();
+                if (viewMeasuredHeight > itemHeight) {
+                    return viewMeasuredHeight - itemHeight;
+                }
             }
         }
         return 0;
@@ -451,25 +475,41 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
         int topOffset;
         Rect childFrame = new Rect();
         calculateItemDecorationsForChild(child, mDecorInsets);
+        if (mAdapter.getColumns() > 0) {
+            measureChild(child, getItemWidth(position), getItemHeight(position));
 
-        measureChild(child, getItemWidth(position), getItemHeight(position));
+            int lastPos = mAdapter.getItemLeftIndex(position);
+            int topPos = mAdapter.getItemTopIndex(position);
 
-        int lastPos = mAdapter.getItemLeftIndex(position);
-        int topPos = mAdapter.getItemTopIndex(position);
+            if (lastPos == 0) {
+                leftOffset = -mDecorInsets.left + getPaddingLeft();
+            } else {
+                leftOffset = (int) ((mOriItemWidth + getChildHorizontalPadding(child)) * lastPos
+                        - mDecorInsets.left + getPaddingLeft());
+            }
 
-        if (lastPos == 0) {
-            leftOffset = -mDecorInsets.left + getPaddingLeft();
+            if (topPos == 0) {
+                topOffset = -mDecorInsets.top + getPaddingTop();
+            } else {
+                topOffset = (int) ((mOriItemHeight + getChildVerticalPadding(child)) * topPos
+                        - mDecorInsets.top + getPaddingTop()
+                        + mExtraChildHeight * mAdapter.getItemTopIndex(position));
+            }
         } else {
-            leftOffset = (int) ((mOriItemWidth + getChildHorizontalPadding(child)) * lastPos
-                    - mDecorInsets.left + getPaddingLeft());
-        }
-
-        if (topPos == 0) {
-            topOffset = -mDecorInsets.top + getPaddingTop();
-        } else {
-            topOffset = (int) ((mOriItemHeight + getChildVerticalPadding(child)) * topPos
-                    - mDecorInsets.top + getPaddingTop()
-                    + mExtraChildHeight * mAdapter.getItemTopIndex(position));
+            measureChild(child);
+            int leftIndex;
+            int topIndex;
+            if (mOrientation == HORIZONTAL) {
+                leftIndex = position / mNumRowOrColumn;
+                topIndex = position % mNumRowOrColumn;
+            } else {
+                leftIndex = position % mNumRowOrColumn;
+                topIndex = position / mNumRowOrColumn;
+            }
+            leftOffset = leftIndex * (child.getWidth() + mDecorInsets.left + mDecorInsets.right)
+                    + getPaddingLeft();
+            topOffset = topIndex * (child.getHeight() + mDecorInsets.top + mDecorInsets.bottom)
+                    + getPaddingTop();
         }
 
         int childHorizontalSpace = getDecoratedMeasurementHorizontal(child);
@@ -490,7 +530,7 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
                     mHorizontalOffset + getHorizontalSpace() + mExpandSpace, getClientSize());
         } else {
             displayFrame = new Rect(0, mVerticalOffset - getPaddingTop() - mExpandSpace,
-                    getClientSize(), mVerticalOffset + getVerticalSpace() + mExpandSpace);
+                    getHorizontalSpace(), mVerticalOffset + getVerticalSpace() + mExpandSpace);
         }
         return displayFrame;
     }
@@ -528,7 +568,11 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
             if (frame != null && i < rectCount) {
                 if (Rect.intersects(displayRect, frame)) {
                     View scrap = recycler.getViewForPosition(i);
-                    measureChild(scrap, getItemWidth(i), getItemHeight(i));
+                    if (mAdapter.getColumns() > 0) {
+                        measureChild(scrap, getItemWidth(i), getItemHeight(i));
+                    } else {
+                        measureChild(scrap);
+                    }
                     addView(scrap);
                     if (mOrientation == HORIZONTAL) {
                         layoutDecoratedWithMargins(scrap,
@@ -596,7 +640,11 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
                     continue;
                 }
                 View scrap = recycler.getViewForPosition(i);
-                measureChild(scrap, getItemWidth(i), getItemHeight(i));
+                if (mAdapter.getColumns() > 0) {
+                    measureChild(scrap, getItemWidth(i), getItemHeight(i));
+                } else {
+                    measureChild(scrap);
+                }
                 addView(scrap, 0);
                 if (mOrientation == HORIZONTAL) {
                     layoutDecoratedWithMargins(scrap,
@@ -687,6 +735,35 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
         return lastPos;
     }
 
+    private void measureChild(View child) {
+        final ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) child.getLayoutParams();
+        calculateItemDecorationsForChild(child, mDecorInsets);
+        int widthUsed = lp.leftMargin + lp.rightMargin + mDecorInsets.left + mDecorInsets.right;
+        int heightUsed = lp.topMargin + lp.bottomMargin + mDecorInsets.top + mDecorInsets.bottom;
+
+        final int secondarySpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+        int widthSpec, heightSpec;
+
+        if (mOrientation == HORIZONTAL) {
+            widthSpec = ViewGroup.getChildMeasureSpec(
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED), widthUsed, lp.width);
+            heightSpec = ViewGroup.getChildMeasureSpec(secondarySpec, heightUsed, lp.height);
+        } else {
+            heightSpec = ViewGroup.getChildMeasureSpec(
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED), heightUsed, lp.height);
+            widthSpec = ViewGroup.getChildMeasureSpec(secondarySpec, widthUsed, lp.width);
+        }
+        child.measure(widthSpec, heightSpec);
+        if (DEBUG) {
+            Log.v(TAG, "measureChild secondarySpec " + Integer.toHexString(secondarySpec)
+                    + " widthSpec " + Integer.toHexString(widthSpec)
+                    + " heightSpec " + Integer.toHexString(heightSpec)
+                    + " measuredWidth " + child.getMeasuredWidth()
+                    + " measuredHeight " + child.getMeasuredHeight());
+        }
+        if (DEBUG) Log.v(TAG, "child lp width " + lp.width + " height " + lp.height);
+    }
+
     /**
      * Measure a child view using standard measurement policy, taking the padding
      * of the parent HorizontalModuleGridView, any added item decorations and the child margins
@@ -732,7 +809,7 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
             } else {
                 realOffset -= mHorizontalOffset;
             }
-        } else if (mHorizontalOffset + dx > maxScrollSpace) {
+        } else if (mItemsRect.size() >= getItemCount() && mHorizontalOffset + dx > maxScrollSpace) {
             realOffset = maxScrollSpace - mHorizontalOffset;
         }
 
@@ -771,7 +848,7 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
             } else {
                 realOffset -= mVerticalOffset;
             }
-        } else if (mVerticalOffset + dy > maxScrollSpace) {
+        } else if (mItemsRect.size() >= getItemCount() && mVerticalOffset + dy > maxScrollSpace) {
             realOffset = maxScrollSpace - mVerticalOffset;
         }
 
@@ -806,7 +883,6 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
 
     @Override
     public View onInterceptFocusSearch(View focused, int direction) {
-        mDirection = direction;
         if (mFocusSearchDisabled) {
             return focused;
         }
@@ -846,7 +922,6 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
     }
 
     private void discardLayoutInfo() {
-        mDirection = DEFAULT_DIRECTION;
         mExtraChildHeight = 0;
         mHorizontalOffset = 0;
         mVerticalOffset = 0;
@@ -1028,21 +1103,6 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
         }
         int scrollPrimary = getAlignedScrollPrimary(view);
 
-        // When the distance that the view needs to slide
-        // is greater than the maximum sliding distance,
-        // recalculate the sliding distance and reduce the sliding calculation.
-        if (scrollPrimary > 0) {
-            int maxScrollDistance = getMaxScrollDistance();
-            if (mOrientation == HORIZONTAL) {
-                if (mHorizontalOffset + scrollPrimary > maxScrollDistance) {
-                    scrollPrimary = maxScrollDistance - mHorizontalOffset;
-                }
-            } else {
-                if (mVerticalOffset + scrollPrimary > maxScrollDistance) {
-                    scrollPrimary = maxScrollDistance - mVerticalOffset;
-                }
-            }
-        }
         if (DEBUG) {
             Log.d(TAG, "getAlignedPosition: scrollPrimary=" + scrollPrimary);
         }
@@ -1110,19 +1170,9 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
     private int getAlignedScrollPrimary(View view) {
         int distance;
         if (mOrientation == HORIZONTAL) {
-            if (mDirection != DEFAULT_DIRECTION) {
-                if (mDirection == View.FOCUS_UP || mDirection == View.FOCUS_DOWN) {
-                    return 0;
-                }
-            }
             distance = view.getLeft() +
                     view.getWidth() / 2 - getClientSize() / 2 - getPaddingLeft();
         } else {
-            if (mDirection != DEFAULT_DIRECTION) {
-                if (mDirection == View.FOCUS_LEFT || mDirection == View.FOCUS_RIGHT) {
-                    return 0;
-                }
-            }
             distance = view.getTop() +
                     view.getHeight() / 2 - getClientSize() / 2 - getPaddingTop();
         }
@@ -1688,10 +1738,6 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
     }
 
     void setGravity(int gravity) {
-    }
-
-    void setRowHeight(int height) {
-
     }
 
     int getOpticalLeft(View view) {

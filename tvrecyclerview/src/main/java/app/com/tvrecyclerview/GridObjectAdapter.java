@@ -81,11 +81,11 @@ public class GridObjectAdapter {
 
     private ArrayList<RowItem> mItems = new ArrayList<>();
 
-    private int mRowSpacing = 15;
+    private int mRowSpacing = 0;
 
-    private int mColumnSpacing = 15;
+    private int mColumnSpacing = 0;
 
-    private int mNumRowOrColumns = 0;
+    private int mColumns = 0;
 
     private float mAspectRatio = 1.0f;
 
@@ -110,15 +110,39 @@ public class GridObjectAdapter {
         setPresenterSelector(new SinglePresenterSelector(presenter));
     }
 
+    public GridObjectAdapter(Presenter presenter,
+                             int rowSpacing, int columnSpacing, int columns,
+                             float aspectRatio) {
+        mRowSpacing = rowSpacing;
+        mColumnSpacing = columnSpacing;
+        mColumns = columns;
+        mAspectRatio = aspectRatio;
+        setPresenterSelector(new SinglePresenterSelector(presenter));
+    }
+
+    public GridObjectAdapter(Presenter presenter, int columns,
+                             float aspectRatio) {
+        mColumns = columns;
+        mAspectRatio = aspectRatio;
+        setPresenterSelector(new SinglePresenterSelector(presenter));
+    }
+
+    public GridObjectAdapter(PresenterSelector presenterSelector, int columns,
+                             float aspectRatio) {
+        mColumns = columns;
+        mAspectRatio = aspectRatio;
+        setPresenterSelector(presenterSelector);
+    }
+
     /**
      * Constructs an adapter.
      */
     public GridObjectAdapter(PresenterSelector presenterSelector,
-                             int rowSpacing, int columnSpacing, int numRowOrColumns,
+                             int rowSpacing, int columnSpacing, int columns,
                              float aspectRatio) {
         mRowSpacing = rowSpacing;
         mColumnSpacing = columnSpacing;
-        mNumRowOrColumns = numRowOrColumns;
+        mColumns = columns;
         mAspectRatio = aspectRatio;
         setPresenterSelector(presenterSelector);
     }
@@ -127,7 +151,7 @@ public class GridObjectAdapter {
                              float aspectRatio) {
         mRowSpacing = rowSpacing;
         mColumnSpacing = columnSpacing;
-        mNumRowOrColumns = numRowOrColumns;
+        mColumns = numRowOrColumns;
         mAspectRatio = aspectRatio;
     }
 
@@ -260,7 +284,7 @@ public class GridObjectAdapter {
     }
 
     public int getItemLeftIndex(int position) {
-        if (mItems == null) {
+        if (mItems == null || position < 0) {
             return 0;
         }
         if (position < mItems.size()) {
@@ -271,7 +295,7 @@ public class GridObjectAdapter {
     }
 
     public int getItemTopIndex(int position) {
-        if (mItems == null) {
+        if (mItems == null || position < 0) {
             return 0;
         }
         if (position < mItems.size()) {
@@ -282,7 +306,7 @@ public class GridObjectAdapter {
     }
 
     public int getItemRowSize(int position) {
-        if (mItems == null) {
+        if (mItems == null || position < 0) {
             return 0;
         }
         if (position < mItems.size()) {
@@ -293,7 +317,7 @@ public class GridObjectAdapter {
     }
 
     public int getItemColumnSize(int position) {
-        if (mItems == null) {
+        if (mItems == null || position < 0) {
             return 0;
         }
         if (position < mItems.size()) {
@@ -311,8 +335,8 @@ public class GridObjectAdapter {
         return mRowSpacing;
     }
 
-    public int getMaxRowOrColumn() {
-        return mNumRowOrColumns;
+    public int getColumns() {
+        return mColumns;
     }
 
     public float getAspectRatio() {

@@ -10,9 +10,9 @@ import com.app.tvrecyclerview.Utils;
 import app.com.tvrecyclerview.Presenter;
 
 
-public class RegularPresenter extends Presenter {
+public class RegularVerticalPresenter extends Presenter {
 
-    RegularPresenter(Context context) {
+    public RegularVerticalPresenter(Context context) {
         super(context);
     }
 
@@ -21,7 +21,7 @@ public class RegularPresenter extends Presenter {
         ImageView view = new ImageView(getContext());
         view.setSelected(true);
         view.setFocusable(true);
-        ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(423, 138);
+        ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(413, 238);
         view.setLayoutParams(params);
         return view;
     }

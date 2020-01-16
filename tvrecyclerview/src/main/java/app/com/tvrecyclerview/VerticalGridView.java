@@ -3,7 +3,6 @@ package app.com.tvrecyclerview;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.util.AttributeSet;
-import android.util.TypedValue;
 
 public class VerticalGridView extends BaseGridView {
 
@@ -28,17 +27,8 @@ public class VerticalGridView extends BaseGridView {
     protected void initAttributes(Context context, AttributeSet attrs) {
         initBaseGridViewAttributes(context, attrs);
         TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.BaseGridView);
-        setColumnWidth(a);
         setNumColumns(a.getInt(R.styleable.BaseGridView_numberOfColumns, 1));
         a.recycle();
-    }
-
-    void setColumnWidth(TypedArray array) {
-        TypedValue typedValue = array.peekValue(R.styleable.BaseGridView_columnWidth);
-        if (typedValue != null) {
-            int size = array.getLayoutDimension(R.styleable.BaseGridView_columnWidth, 0);
-            setColumnWidth(size);
-        }
     }
 
     /**
@@ -49,15 +39,4 @@ public class VerticalGridView extends BaseGridView {
         requestLayout();
     }
 
-    /**
-     * Sets the column width.
-     *
-     * @param width May be {@link android.view.ViewGroup.LayoutParams#WRAP_CONTENT}, or a size
-     *              in pixels. If zero, column width will be fixed based on number of columns
-     *              and view width.
-     */
-    public void setColumnWidth(int width) {
-        mLayoutManager.setRowHeight(width);
-        requestLayout();
-    }
 }

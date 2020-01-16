@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="tr_focus_zoom_factor_large" type="fraction">118%</item>
+    <item name="tr_focus_zoom_factor_medium" type="fraction">114%</item>
+    <item name="tr_focus_zoom_factor_small" type="fraction">110%</item>
+    <item name="tr_focus_zoom_factor_xsmall" type="fraction">106%</item>
+    <item name="tr_search_orb_focused_zoom" type="fraction">120%</item>
+    <item name="tr_browse_header_select_duration" type="integer">150</item>
+    <item name="tr_focus_animator" type="id"/>
+</resources>

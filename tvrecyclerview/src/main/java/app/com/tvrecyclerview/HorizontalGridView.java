@@ -53,7 +53,6 @@ public class HorizontalGridView extends BaseGridView {
     protected void initAttributes(Context context, AttributeSet attrs) {
         initBaseGridViewAttributes(context, attrs);
         TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.BaseGridView);
-        setRowHeight(a);
         setNumRows(a.getInt(R.styleable.BaseGridView_numberOfRows, 1));
         a.recycle();
         updateLayerType();
@@ -61,31 +60,11 @@ public class HorizontalGridView extends BaseGridView {
         mTempPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
     }
 
-    void setRowHeight(TypedArray array) {
-        TypedValue typedValue = array.peekValue(R.styleable.BaseGridView_rowHeight);
-        if (typedValue != null) {
-            int size = array.getLayoutDimension(R.styleable.BaseGridView_rowHeight, 0);
-            setRowHeight(size);
-        }
-    }
-
     /**
      * Sets the number of rows.  Defaults to one.
      */
     public void setNumRows(int numRows) {
         mLayoutManager.setNumRows(numRows);
-        requestLayout();
-    }
-
-    /**
-     * Sets the row height.
-     *
-     * @param height May be {@link android.view.ViewGroup.LayoutParams#WRAP_CONTENT WRAP_CONTENT},
-     *               or a size in pixels. If zero, row height will be fixed based on number of
-     *               rows and view height.
-     */
-    public void setRowHeight(int height) {
-        mLayoutManager.setRowHeight(height);
         requestLayout();
     }
 

@@ -1,8 +1,7 @@
-package com.app.tvrecyclerview.reuglar;
+package com.app.tvrecyclerview.irregular;
 
 import android.content.Context;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import com.app.tvrecyclerview.Utils;
@@ -10,9 +9,9 @@ import com.app.tvrecyclerview.Utils;
 import app.com.tvrecyclerview.Presenter;
 
 
-public class RegularPresenter extends Presenter {
+public class IrregularPresenter extends Presenter {
 
-    RegularPresenter(Context context) {
+    IrregularPresenter(Context context) {
         super(context);
     }
 
@@ -21,8 +20,6 @@ public class RegularPresenter extends Presenter {
         ImageView view = new ImageView(getContext());
         view.setSelected(true);
         view.setFocusable(true);
-        ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(423, 138);
-        view.setLayoutParams(params);
         return view;
     }
 

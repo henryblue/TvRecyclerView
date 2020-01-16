@@ -35,7 +35,7 @@ abstract class BaseGridView extends RecyclerView {
      */
     public final static int FOCUS_SCROLL_PAGE = 2;
 
-
+    private int mFocusZoomFactor = FocusHighlightHelper.ZOOM_FACTOR_NONE;
 
     /**
      * Listener for intercepting touch dispatch events.
@@ -123,18 +123,38 @@ abstract class BaseGridView extends RecyclerView {
         a.recycle();
     }
 
-    public void setObjectAdapter(GridObjectAdapter adapter) {
-        setObjectAdapter(adapter, null);
+    public void setAdapter(GridObjectAdapter adapter) {
+        setAdapter(adapter, null);
     }
 
-    public void setObjectAdapter(GridObjectAdapter adapter, PresenterSelector presenterSelector) {
+    public void setAdapter(GridObjectAdapter adapter, PresenterSelector presenterSelector) {
         if (adapter != null) {
             mLayoutManager.setAdapter(adapter);
             ItemBridgeAdapter bridgeAdapter = new ItemBridgeAdapter(adapter, presenterSelector);
+            FocusHighlightHelper.setupItemBridgeFocusHighlight(bridgeAdapter, mFocusZoomFactor);
             setAdapter(bridgeAdapter);
         }
     }
 
+    /**
+     * set zoom factor
+     * @param factor factor
+     * <ul>
+     * <li>{@link FocusHighlightHelper #ZOOM_FACTOR_NONE} (default) </li>
+     * <li>{@link FocusHighlightHelper #ZOOM_FACTOR_SMALL}</li>
+     * <li>{@link FocusHighlightHelper #ZOOM_FACTOR_MEDIUM}</li>
+     * <li>{@link FocusHighlightHelper #ZOOM_FACTOR_LARGE}</li>
+     * <li>{@link FocusHighlightHelper #ZOOM_FACTOR_XSMALL}</li>
+     * </ul>
+     */
+    public void setFocusZoomFactor(int factor) {
+        mFocusZoomFactor = factor;
+        Adapter adapter = getAdapter();
+        if (adapter != null && adapter instanceof ItemBridgeAdapter) {
+            ItemBridgeAdapter bridgeAdapter = (ItemBridgeAdapter) adapter;
+            FocusHighlightHelper.setupItemBridgeFocusHighlight(bridgeAdapter, mFocusZoomFactor);
+        }
+    }
     /**
      * Sets the strategy used to scroll in response to item focus changing:
      * <ul>

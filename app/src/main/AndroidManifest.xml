@@ -17,6 +17,9 @@
         </activity>
 
         <activity android:name=".reuglar.RegularActivity" />
+        <activity android:name=".irregular.IrregularActivity" />
+        <activity android:name=".reuglar.RegularVerticalActivity" />
+        <activity android:name=".irregular.IrregularVerticalActivity" />
     </application>
 
 </manifest>

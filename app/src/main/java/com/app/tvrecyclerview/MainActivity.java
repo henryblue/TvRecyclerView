@@ -6,7 +6,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
 
+import com.app.tvrecyclerview.irregular.IrregularActivity;
+import com.app.tvrecyclerview.irregular.IrregularVerticalActivity;
 import com.app.tvrecyclerview.reuglar.RegularActivity;
+import com.app.tvrecyclerview.reuglar.RegularVerticalActivity;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -28,6 +31,8 @@ public class MainActivity extends AppCompatActivity {
         btnModule.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, IrregularActivity.class);
+                startActivity(intent);
             }
         });
 
@@ -35,6 +40,17 @@ public class MainActivity extends AppCompatActivity {
         btnModuleV.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, RegularVerticalActivity.class);
+                startActivity(intent);
+            }
+        });
+
+        Button btnModuleV1 = findViewById(R.id.btn_regular_vertical);
+        btnModuleV1.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, IrregularVerticalActivity.class);
+                startActivity(intent);
             }
         });
     }
