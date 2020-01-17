@@ -52,8 +52,8 @@ public class HorizontalGridView extends BaseGridView {
 
     protected void initAttributes(Context context, AttributeSet attrs) {
         initBaseGridViewAttributes(context, attrs);
-        TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.BaseGridView);
-        setNumRows(a.getInt(R.styleable.BaseGridView_numberOfRows, 1));
+        TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.HorizontalGridView);
+        setNumRows(a.getInt(R.styleable.HorizontalGridView_numberOfRows, 1));
         a.recycle();
         updateLayerType();
         mTempPaint = new Paint();

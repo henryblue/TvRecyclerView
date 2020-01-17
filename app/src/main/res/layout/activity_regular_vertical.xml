@@ -7,10 +7,8 @@
 
     <app.com.tvrecyclerview.VerticalGridView
         android:id="@+id/id_grid_vertical"
-        android:layout_width="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:paddingLeft="45dp"
-        android:paddingRight="45dp"
+        android:layout_width="match_parent"
+        android:gravity="center_horizontal"
         android:paddingTop="30dp"
         android:clipChildren="false"
         android:clipToPadding="false"

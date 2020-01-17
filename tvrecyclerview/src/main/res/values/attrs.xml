@@ -1,18 +1,16 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <resources>
-
-    <attr name="scrollMode" >
-        <enum name="alignScroll" value="0"/>
-        <enum name="followScroll" value="1"/>
-        <enum name="normalScroll" value="2" />
-    </attr>
-
     <declare-styleable name="BaseGridView">
-        <attr name="numberOfRows" format="integer" />
-        <attr name="numberOfColumns" format="integer" />
-        <attr name="rowHeight" format="reference|integer" />
-        <attr name="columnWidth" format="reference|integer" />
+        <attr format="boolean" name="focusOutFront"/>
+        <attr format="boolean" name="focusOutEnd"/>
         <attr name="android:gravity"/>
     </declare-styleable>
 
+    <declare-styleable name="HorizontalGridView">
+        <attr name="numberOfRows" format="integer" />
+    </declare-styleable>
+
+    <declare-styleable name="VerticalGridView">
+        <attr name="numberOfColumns" format="integer" />
+    </declare-styleable>
 </resources>

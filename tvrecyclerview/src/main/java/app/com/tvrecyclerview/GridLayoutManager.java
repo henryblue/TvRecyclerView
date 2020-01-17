@@ -8,13 +8,12 @@ import android.support.v7.widget.OrientationHelper;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.util.SparseArray;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 
 import java.util.ArrayList;
 import java.util.Locale;
-
-import static android.support.v7.widget.RecyclerView.HORIZONTAL;
 
 
 final class GridLayoutManager extends RecyclerView.LayoutManager {
@@ -34,6 +33,7 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
     private final static int LAYOUT_END = 1;
     private static final int NO_POSITION = -1;
     private static final int NO_ID = -1;
+    private static final int DEFAULT_DIRECTION = -1;
 
     private GridObjectAdapter mAdapter;
 
@@ -142,7 +142,25 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
      */
     private int mExtraChildHeight = 0;
 
+    /**
+     *  Allow DPAD key to navigate out at the front of the View (where position = 0),
+     *  default is false.
+     */
+    private boolean mFocusOutFront;
+
+    /**
+     * Allow DPAD key to navigate out at the end of the view, default is false.
+     */
+    private boolean mFocusOutEnd;
+
+    /**
+     * How to position child in secondary direction.
+     */
+    private int mGravity = Gravity.START | Gravity.TOP;
+
     private boolean mScrollEnabled = true;
+
+    private int mDirection = DEFAULT_DIRECTION;
 
     private OnChildSelectedListener mChildSelectedListener = null;
 
@@ -150,11 +168,11 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
 
     private OnFocusSearchFailedListener mFocusSearchFailedListener;
 
-    public GridLayoutManager(BaseGridView recyclerView) {
+    GridLayoutManager(BaseGridView recyclerView) {
         this(recyclerView, HORIZONTAL);
     }
 
-    public GridLayoutManager(BaseGridView recyclerView, int orientation) {
+    GridLayoutManager(BaseGridView recyclerView, int orientation) {
         mBaseRecyclerView = recyclerView;
         mOrientation = orientation;
         mItemsRect = new SparseArray<>();
@@ -216,30 +234,27 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
                         (!isWidthSpec && mOrientation == VERTICAL)){
                     return size;
                 } else if (!isWidthSpec && mOrientation == HORIZONTAL) {
-                    return calculateMeasureHeight(space);
+                    return calculateMeasureHeight(getChildAt(0), space);
                 } else if (isWidthSpec && mOrientation == VERTICAL) {
-                    return calculateMeasureWidth(size, space);
+                    return calculateMeasureWidth(getChildAt(0), size, space);
                 }
                 return Math.min(size, space);
             case View.MeasureSpec.UNSPECIFIED:
             default:
                 if (!isWidthSpec) {
-                    return calculateMeasureHeight(space);
+                    return calculateMeasureHeight(getChildAt(0), space);
                 } else {
                     return space;
                 }
         }
     }
 
-    private int calculateMeasureWidth(int size, int space) {
+    private int calculateMeasureWidth(View view, int size, int space) {
         int width = size;
         if (mAdapter.getColumns() <= 0) {
-            View view = findViewByPosition(0);
             if (view != null) {
-                measureChild(view);
-                width = mNumRowOrColumn * view.getMeasuredWidth() + space
-                        + (mDecorInsets.left + mDecorInsets.right) * (mNumRowOrColumn - 1)
-                        + getPaddingLeft() + getPaddingRight();
+                width = mNumRowOrColumn * view.getWidth() + space
+                        + (mDecorInsets.left + mDecorInsets.right) * (mNumRowOrColumn - 1);
             }
         }
         if (DEBUG) {
@@ -248,21 +263,18 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
         return width;
     }
 
-    private int calculateMeasureHeight(int space) {
+    private int calculateMeasureHeight(View view, int space) {
         int height = space;
         if (mAdapter.getColumns() > 0) {
             int rowNum = mAdapter.getItemTopIndex(getItemCount() - 1) +
                     mAdapter.getItemRowSize(getItemCount() - 1);
             height = (int) (rowNum * mOriItemHeight +
                     (mAdapter.getRowSpacing() * (rowNum - 1)) +
-                    getPaddingTop() + getPaddingBottom() + rowNum * mExtraChildHeight);
+                    space + rowNum * mExtraChildHeight);
         } else {
-            View view = findViewByPosition(0);
             if (view != null) {
-                measureChild(view);
-                height = mNumRowOrColumn * view.getMeasuredHeight() + space
-                        + (mDecorInsets.top + mDecorInsets.bottom) * (mNumRowOrColumn - 1)
-                + getPaddingTop() + getPaddingBottom();
+                height = mNumRowOrColumn * view.getHeight() + space
+                        + (mDecorInsets.top + mDecorInsets.bottom) * (mNumRowOrColumn - 1);
             }
         }
         if (DEBUG) {
@@ -510,6 +522,21 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
                     + getPaddingLeft();
             topOffset = topIndex * (child.getHeight() + mDecorInsets.top + mDecorInsets.bottom)
                     + getPaddingTop();
+
+            final int verticalGravity = mGravity & Gravity.VERTICAL_GRAVITY_MASK;
+            final int horizontalGravity = mGravity & Gravity.HORIZONTAL_GRAVITY_MASK;
+            if (mOrientation == HORIZONTAL && verticalGravity == Gravity.TOP
+                    || mOrientation == VERTICAL && horizontalGravity == Gravity.LEFT) {
+                // do nothing
+            } else if (mOrientation == HORIZONTAL && verticalGravity == Gravity.BOTTOM) {
+                topOffset +=  getHeight() - calculateMeasureHeight(child, 0);
+            } else if (mOrientation == VERTICAL && horizontalGravity == Gravity.RIGHT) {
+                leftOffset += getWidth() - calculateMeasureWidth(child, 0, 0);
+            } else if (mOrientation == HORIZONTAL && verticalGravity == Gravity.CENTER_VERTICAL) {
+                topOffset += (getHeight() - calculateMeasureHeight(child, 0)) / 2;
+            } else if (mOrientation == VERTICAL && horizontalGravity == Gravity.CENTER_HORIZONTAL) {
+                leftOffset += (getWidth() - calculateMeasureWidth(child, 0, 0)) / 2;
+            }
         }
 
         int childHorizontalSpace = getDecoratedMeasurementHorizontal(child);
@@ -874,15 +901,73 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
     @Override
     public View onFocusSearchFailed(View focused, int direction, RecyclerView.Recycler recycler,
                                     RecyclerView.State state) {
+        if (DEBUG) Log.v(TAG, "onFocusSearchFailed direction " + direction);
+        View view = null;
+        int movement = getMovement(direction);
+        final boolean isScroll = mBaseRecyclerView.getScrollState() != RecyclerView.SCROLL_STATE_IDLE;
+        if (movement == NEXT_ITEM) {
+            if (isScroll || !mFocusOutEnd) {
+                view = focused;
+            }
+        } else if (movement == PREV_ITEM) {
+            if (isScroll || !mFocusOutFront) {
+                view = focused;
+            }
+        }
         if (mFocusSearchFailedListener != null) {
             mFocusSearchFailedListener.onFocusSearchFailed(focused, direction, mFocusPosition,
                     state.getItemCount());
         }
-        return super.onFocusSearchFailed(focused, direction, recycler, state);
+        if (DEBUG) Log.v(TAG, "onFocusSearchFailed returning view " + view);
+        return view;
+    }
+
+    private final static int PREV_ITEM = 0;
+    private final static int NEXT_ITEM = 1;
+    private final static int PREV_ROW = 2;
+    private final static int NEXT_ROW = 3;
+
+    private int getMovement(int direction) {
+        int movement = View.FOCUS_LEFT;
+
+        if (mOrientation == HORIZONTAL) {
+            switch(direction) {
+                case View.FOCUS_LEFT:
+                    movement = PREV_ITEM;
+                    break;
+                case View.FOCUS_RIGHT:
+                    movement = NEXT_ITEM;
+                    break;
+                case View.FOCUS_UP:
+                    movement = PREV_ROW;
+                    break;
+                case View.FOCUS_DOWN:
+                    movement = NEXT_ROW;
+                    break;
+            }
+        } else if (mOrientation == VERTICAL) {
+            switch(direction) {
+                case View.FOCUS_LEFT:
+                    movement = PREV_ROW;
+                    break;
+                case View.FOCUS_RIGHT:
+                    movement = NEXT_ROW;
+                    break;
+                case View.FOCUS_UP:
+                    movement = PREV_ITEM;
+                    break;
+                case View.FOCUS_DOWN:
+                    movement = NEXT_ITEM;
+                    break;
+            }
+        }
+
+        return movement;
     }
 
     @Override
     public View onInterceptFocusSearch(View focused, int direction) {
+        mDirection = direction;
         if (mFocusSearchDisabled) {
             return focused;
         }
@@ -921,7 +1006,13 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
         super.onAdapterChanged(oldAdapter, newAdapter);
     }
 
+    public void setFocusOutAllowed(boolean throughFront, boolean throughEnd) {
+        mFocusOutFront = throughFront;
+        mFocusOutEnd = throughEnd;
+    }
+
     private void discardLayoutInfo() {
+        mDirection = DEFAULT_DIRECTION;
         mExtraChildHeight = 0;
         mHorizontalOffset = 0;
         mVerticalOffset = 0;
@@ -1170,9 +1261,19 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
     private int getAlignedScrollPrimary(View view) {
         int distance;
         if (mOrientation == HORIZONTAL) {
+            if (mDirection != DEFAULT_DIRECTION) {
+                if (mDirection == View.FOCUS_UP || mDirection == View.FOCUS_DOWN) {
+                    return 0;
+                }
+            }
             distance = view.getLeft() +
                     view.getWidth() / 2 - getClientSize() / 2 - getPaddingLeft();
         } else {
+            if (mDirection != DEFAULT_DIRECTION) {
+                if (mDirection == View.FOCUS_LEFT || mDirection == View.FOCUS_RIGHT) {
+                    return 0;
+                }
+            }
             distance = view.getTop() +
                     view.getHeight() / 2 - getClientSize() / 2 - getPaddingTop();
         }
@@ -1214,9 +1315,9 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
     private int getMaxScrollDistance() {
         int scrollDistance;
         if (mOrientation == HORIZONTAL) {
-            scrollDistance = mTotalSize - getClientSize() - getPaddingLeft();
+            scrollDistance = mTotalSize - getClientSize();
         } else {
-            scrollDistance = mTotalSize - getClientSize() - getPaddingTop();
+            scrollDistance = mTotalSize - getClientSize();
         }
         return scrollDistance > 0 ? scrollDistance : 0;
     }
@@ -1738,6 +1839,7 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
     }
 
     void setGravity(int gravity) {
+        mGravity = gravity;
     }
 
     int getOpticalLeft(View view) {

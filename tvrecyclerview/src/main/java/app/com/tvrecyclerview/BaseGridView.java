@@ -117,6 +117,9 @@ abstract class BaseGridView extends RecyclerView {
 
     protected void initBaseGridViewAttributes(Context context, AttributeSet attrs) {
         TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.BaseGridView);
+        boolean throughFront = a.getBoolean(R.styleable.BaseGridView_focusOutFront, false);
+        boolean throughEnd = a.getBoolean(R.styleable.BaseGridView_focusOutEnd, false);
+        mLayoutManager.setFocusOutAllowed(throughFront, throughEnd);
         if (a.hasValue(R.styleable.BaseGridView_android_gravity)) {
             setGravity(a.getInt(R.styleable.BaseGridView_android_gravity, Gravity.NO_GRAVITY));
         }
@@ -317,7 +320,6 @@ abstract class BaseGridView extends RecyclerView {
     /**
      * Sets whether an animation should run when a child changes size or when adding
      * or removing a child.
-     * <p><i>Unstable API, might change later.</i>
      */
     public void setAnimateChildLayout(boolean animateChildLayout) {
         if (mAnimateChildLayout != animateChildLayout) {
@@ -334,7 +336,6 @@ abstract class BaseGridView extends RecyclerView {
     /**
      * Returns true if an animation will run when a child changes size or when
      * adding or removing a child.
-     * <p><i>Unstable API, might change later.</i>
      */
     public boolean isChildLayoutAnimated() {
         return mAnimateChildLayout;

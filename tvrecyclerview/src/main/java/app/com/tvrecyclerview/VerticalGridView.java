@@ -26,8 +26,8 @@ public class VerticalGridView extends BaseGridView {
 
     protected void initAttributes(Context context, AttributeSet attrs) {
         initBaseGridViewAttributes(context, attrs);
-        TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.BaseGridView);
-        setNumColumns(a.getInt(R.styleable.BaseGridView_numberOfColumns, 1));
+        TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.VerticalGridView);
+        setNumColumns(a.getInt(R.styleable.VerticalGridView_numberOfColumns, 1));
         a.recycle();
     }
 
