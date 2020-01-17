@@ -23,9 +23,8 @@ public class RegularActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_regular);
+
         HorizontalGridView gridView = findViewById(R.id.id_grid_first);
-
-
         gridView.addItemDecoration(new SpaceItemDecoration());
         gridView.setNumRows(2);
         GridObjectAdapter adapter = new GridObjectAdapter(new RegularPresenter(this));
