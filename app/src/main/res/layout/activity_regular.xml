@@ -4,15 +4,16 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:clipChildren="false"
+    android:background="@color/colorPrimary"
     android:orientation="vertical">
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textColor="@android:color/black"
-        android:text="第一种实现方式(the first way)"
+        android:textColor="@android:color/white"
+        android:text="The first way:"
         android:paddingLeft="45dp"
         android:paddingTop="45dp"
-        android:textSize="20dp"/>
+        android:textSize="21dp"/>
 
     <app.com.tvrecyclerview.HorizontalGridView
         android:id="@+id/id_grid_first"
@@ -27,11 +28,11 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textColor="@android:color/black"
-        android:text="第二种实现方式(the second way)"
+        android:textColor="@android:color/white"
+        android:text="The second way:"
         android:paddingLeft="45dp"
         android:paddingTop="35dp"
-        android:textSize="20dp"/>
+        android:textSize="21dp"/>
 
     <app.com.tvrecyclerview.HorizontalGridView
         android:id="@+id/id_grid_second"

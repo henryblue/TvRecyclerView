@@ -1,15 +1,12 @@
 # TvRecyclerView
-A custom RecyclerView for Android TV end.[中文说明](https://github.com/henryblue/TvRecyclerView/blob/master/README-zh.md)
+A custom RecyclerView for Android TV end, It can implement grid and irregular grid two display types.
 
 ## ScreenShot
 <p>
-<img src="screenshot1.png" width="75%" />
+<img src="screen1.png" width="75%" />
 <br/>
 <br/>
-<img src="screenshot2.png" width="75%" />
-<br/>
-<br/>
-<img src="screenshot3.png" width="75%" />
+<img src="screen2.png" width="75%" />
 </p>
 
 ## Usage
@@ -17,80 +14,77 @@ A custom RecyclerView for Android TV end.[中文说明](https://github.com/henry
 ```groovy
 dependencies {
     ......
-    compile 'com.henryblue.library:tvrecyclerview:1.2.3'
+    compile 'com.henryblue.library:tvrecyclerview:1.2.4'
    }
 
 ```
 To add gradle dependency you need to open build.gradle (in your app folder,not in a project folder) then copy and add the dependencies there in the dependencies block;
 
-2.Add TvRecyclerView in your layout
+2.Add HorizontalGridView in your layout
 ```
-<app.com.tvrecyclerview.TvRecyclerView
-        android:id="@+id/tv_recycler_view"
+<app.com.tvrecyclerview.HorizontalGridView
+        android:id="@+id/id_grid_first"
         android:layout_width="match_parent"
-        android:layout_height="580dp"
-        app:focusDrawable="@drawable/default_focus"/>
+        android:layout_height="wrap_content"
+        android:paddingLeft="45dp"
+        android:paddingRight="45dp"
+        android:paddingTop="20dp"
+        android:clipChildren="false"
+        android:clipToPadding="false" />
+```
+3.Set the presenter(adpter create child view)
+```
+public class RegularPresenter extends Presenter {
+    RegularPresenter(Context context) {
+        super(context);
+    }
+    @Override
+    public View onCreateView() {
+        ImageView view = new ImageView(getContext());
+        view.setSelected(true);
+        view.setFocusable(true);
+        view.setLayoutParams(new ViewGroup.LayoutParams(423, 138));
+        return view;
+    }
+
+    @Override
+    public void onBindViewHolder(ViewHolder viewHolder, Object item) {
+        viewHolder.view.setBackgroundColor(Color.GREEN);
+    }
+
+    @Override
+    public void onUnbindViewHolder(ViewHolder viewHolder) {
+    }
+}
 ```
 
-3.Set the LayoutManager and Adapter
+4.Set GridObjectAdapter
 ```
- mTvRecyclerView = (TvRecyclerView) findViewById(R.id.tv_recycler_view);
- GridLayoutManager manager = new GridLayoutManager(NormalFocusActivity.this, 3);
- manager.setOrientation(LinearLayoutManager.HORIZONTAL);
- mTvRecyclerView.setLayoutManager(manager);
-
- int itemSpace = getResources().
-                getDimensionPixelSize(R.dimen.recyclerView_item_space);
- mTvRecyclerView.addItemDecoration(new SpaceItemDecoration(itemSpace));
-        
- NormalAdapter mAdapter = new NormalAdapter(this);
- mTvRecyclerView.setAdapter(mAdapter);
-
- mTvRecyclerView.setOnItemStateListener(new TvRecyclerView.OnItemStateListener() {
-      @Override
-      public void onItemViewClick(View view, int position) {
-          Log.i(TAG, "you click item position: " + position);
-      }
-
-      @Override
-      public void onItemViewFocusChanged(boolean gainFocus, View view, int position) {
-      }
- });
- mTvRecyclerView.setSelectPadding(35, 34, 35, 38);
+HorizontalGridView gridView = findViewById(R.id.id_grid_first);
+gridView.addItemDecoration(new SpaceItemDecoration());
+gridView.setNumRows(2);
+GridObjectAdapter adapter = new GridObjectAdapter(new RegularPresenter(this));
+gridView.setFocusZoomFactor(FocusHighlightHelper.ZOOM_FACTOR_SMALL);
+gridView.setAdapter(adapter);
+for (int i = 0; i < 10; i++) {
+  adapter.add(new RowItem());
+}
 ```
+<font size=4>For more usage, please refer to the examples in the code. For example how to implement irregular style, please refer [**here.**](https://github.com/henryblue/TvRecyclerView/tree/master/app/src/main/java/com/app/tvrecyclerview/irregular)<font>
 
 ## XML attributes
-
-```xml
-    <app.com.tvrecyclerview.TvRecyclerView
-        ...
-        app:scrollMode="followScroll"
-        app:isAutoProcessFocus="true"
-        app:focusScale="1.04"
-        app:focusDrawable="@drawable/default_focus"
-        ...
-        />
-```
 
 
 | Name | Type | Default | Description |
 |:----:|:----:|:-------:|:-----------:|
-|scrollMode|enum|normalScroll| Set the way to slide |
-|isAutoProcessFocus|boolean|true| Sets the focus of the control |
-|focusScale|Float|1.04| Set the focus scale. If 'isAutoProcessFocus' is false, this property has no effect, always equal 1.0f |
-|focusDrawable|reference|null| set focus drawable, If 'isAutoProcessFocus' is false, this property has no effect |
+|android:gravity|enum|Gravity.TOP&Gravity.LEFT| Set the way to gravity (Works in regular mode) |
+|focusOutFront|boolean|false| Allow DPAD key to navigate out at the front of the View |
+|focusOutEnd|boolean|false|Allow DPAD key to navigate out at the end of the view|
+|numberOfRows|integer|1| set the number of rows in the HorizontalGridView (Works in regular mode) |
+|numberOfColumns|integer|1| set the number of columns in the VerticalGridView (Works in regular mode) |
 
 ## Public Methods
 
-| Name |       Description            |
-|:----:|:---------------:|
-|setSelectedScale(float)| change value of focusScale |
-|setIsAutoProcessFocus(boolean)| sets the focus of the control |
-|setFocusDrawable(Drawable)| sets the focus of the drawable |
-|setItemSelected(int)| sets the position of item gets focus |
-|setSelectPadding(int,int,int,int)| sets the focus of the drawable padding, make the drawable include item |
-
-Note: Because I extended RecyclerView you can use all RecyclerView public methods too.
 
 
 ## License
@@ -110,4 +104,3 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 ```
-
