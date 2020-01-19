@@ -83,7 +83,6 @@ for (int i = 0; i < 10; i++) {
 |numberOfRows|integer|1| set the number of rows in the HorizontalGridView (Works in regular mode) |
 |numberOfColumns|integer|1| set the number of columns in the VerticalGridView (Works in regular mode) |
 
-## Public Methods
 
 
 
