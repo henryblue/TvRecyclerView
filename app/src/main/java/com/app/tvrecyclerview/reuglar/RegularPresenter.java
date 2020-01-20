@@ -21,7 +21,7 @@ public class RegularPresenter extends Presenter {
         ImageView view = new ImageView(getContext());
         view.setSelected(true);
         view.setFocusable(true);
-        ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(423, 138);
+        ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(423, 171);
         view.setLayoutParams(params);
         return view;
     }

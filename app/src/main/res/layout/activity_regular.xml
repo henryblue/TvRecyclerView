@@ -31,7 +31,7 @@
         android:textColor="@android:color/white"
         android:text="The second way:"
         android:paddingLeft="45dp"
-        android:paddingTop="35dp"
+        android:paddingTop="25dp"
         android:textSize="21dp"/>
 
     <app.com.tvrecyclerview.HorizontalGridView
